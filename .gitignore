@@ -1,1 +1,3 @@
 genshin_damage_report
+__pycache__
+./data/*.json
