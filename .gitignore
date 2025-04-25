@@ -1,3 +1,4 @@
 # Config files
 damage_report_fastapi/config.toml
 __pycache__
+node_modules
