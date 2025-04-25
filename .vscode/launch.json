@@ -12,7 +12,7 @@
                 "--reload"
             ],
             "jinja": true,
-            "cwd": "${workspaceFolder}/server"
+            "cwd": "${workspaceFolder}/damage_report_fastapi"
         }
     ]
 }

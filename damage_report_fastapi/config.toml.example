@@ -1,0 +1,7 @@
+[database]
+mongo_uri = "your_mongodb_uri_here"
+db_name = "your_database_name_here"
+
+[app]
+name = "Genshin Damage Report API"
+debug = false
