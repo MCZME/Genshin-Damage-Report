@@ -1,5 +1,16 @@
 <template>
+  <svg width="0" height="0" style="position:absolute">
+    <filter id="meme-outline">
+      <feMorphology operator="dilate" radius="4" in="SourceAlpha" result="thicken" />
+      <feFlood flood-color="#F5F5DC" result="color" />
+      <feComposite in="color" in2="thicken" operator="in" />
+      <feComposite in="SourceGraphic" operator="over" />
+    </filter>
+  </svg>
   <div class="meme-wall">
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+    </div>
     <div 
       v-for="meme in memes" 
       :key="meme.id"
@@ -24,6 +35,71 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+
+const loading = ref(false)
+const generatePoints = (numPoints) => {
+  // 页面尺寸 (100vw x 100vh)
+  const pageWidth = 90
+  const pageHeight = 90
+  
+  // 按钮区域 
+  const buttonTop = 60
+  const buttonHeight = 10
+  const buttonWidth = 20
+  const buttonLeft = (pageWidth - buttonWidth) / 2
+  
+  // 可用区域为顶部70% + 按钮下方20%
+  const availableHeight = buttonTop + (100 - buttonTop - buttonHeight)
+  
+  // 计算可用区域的行列数
+  const cols = Math.ceil(Math.sqrt(numPoints * (pageWidth / availableHeight)))
+  const rows = Math.ceil(numPoints / cols)
+  
+  // 计算每个网格单元尺寸
+  const cellWidth = pageWidth / cols
+  const cellHeight = availableHeight / rows
+  
+  const points = []
+  
+  for (let i = 0; i < numPoints; i++) {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    
+    // 计算网格中心点
+    let x = col * cellWidth + cellWidth / 2
+    let y = row * cellHeight + cellHeight / 2 + 5
+    
+    // 添加安全随机偏移
+    const safeOffsetX = Math.min(cellWidth * 0.3, x, pageWidth - x)
+    // 计算y坐标安全偏移
+    let maxY
+    if (y < buttonTop) {
+      maxY = buttonTop - y
+    } else {
+      maxY = pageHeight - buttonHeight - y
+    }
+    const safeOffsetY = Math.min(cellHeight * 0.3, y, maxY)
+    x += (Math.random() - 0.5) * safeOffsetX * 2
+    y += (Math.random() - 0.5) * safeOffsetY * 2
+    
+    // 确保坐标在有效范围内
+    x = Math.max(0, Math.min(pageWidth, x))
+    y = Math.max(0, Math.min(pageHeight-5, y-5))
+    // 确保不覆盖按钮区域
+    if (y > buttonTop && y < buttonTop + buttonHeight && 
+        x > buttonLeft && x < buttonLeft + buttonWidth) {
+      y = Math.random() * (pageHeight - buttonHeight) + buttonHeight / 2
+      x = Math.random() * (pageWidth - buttonWidth) + buttonWidth / 2
+    }
+    
+    points.push({
+      x: x + '%',
+      y: y + '%'
+    })
+  }
+  
+  return points
+}
 import config from '../config.js'
 
 const memes = ref([])
@@ -39,46 +115,32 @@ const fetchStickers = async () => {
   }
 }
 
-const checkPositionOverlap = (position, memes, minDistance = 20) => {
-  for (const meme of memes) {
-    const dx = Math.abs(parseFloat(position.x) - parseFloat(meme.position.x))
-    const dy = Math.abs(parseFloat(position.y) - parseFloat(meme.position.y))
-    if (dx < minDistance && dy < minDistance) {
-      return true
-    }
-  }
-  return false
-}
-
 const generateMemes = async () => {
+  loading.value = true
+  memes.value = []
   try {
     const count = Math.floor(Math.random() * 6 + 10) // 10-15个
     const stickers = await fetchStickers()
-    const newMemes = []
     let stickerCount = 0
     
+    memes.value = []
     for (let i = 0; i < count; i++) {
+      if (i === 0) loading.value = false
+      await new Promise(resolve => setTimeout(resolve, 300))
       const sticker = stickers[stickerCount] || {}
-      let position, attempts = 0
-      stickerCount ++
-      do {
-        position = {
-          x: 5 + Math.random() * 80 + '%',
-          y: 10 + Math.random() * 70 + '%'
-        }
-        attempts++
-      } while (attempts < 10 && checkPositionOverlap(position, newMemes))
+      let position
+      stickerCount++
+      const points = generatePoints(count)
+      position = points[i]
       
-      newMemes.push({
+      memes.value = [...memes.value, {
         id: Date.now() + Math.random(),
         position,
         rotation: Math.random() * 30 - 15,
         scale: 0.8 + Math.random() * 0.4,
         image: sticker.file_name ? `http://116.198.207.202:40061${sticker.file_name}` : null
-      })
+      }]
     }
-    
-    memes.value = newMemes
   } catch (error) {
     console.error('生成表情包失败:', error)
     // 返回默认meme数据
@@ -108,11 +170,38 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #FF3366;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .meme-wall {
   position: relative;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  scrollbar-width: none;
   background: url('http://116.198.207.202:40061/i/2025/04/28/txohxa.png') 0 0/100% 100% no-repeat;
 }
 
@@ -125,12 +214,14 @@ onMounted(async () => {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  filter: url(#meme-outline);
 }
 
 .refresh-button {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 12px 24px;
   background: rgba(255, 51, 102, 0.9);
   border: 2px solid #FFD700;
@@ -139,11 +230,11 @@ onMounted(async () => {
   font-family: 'HYWenHei';
   cursor: pointer;
   z-index: 1000;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .refresh-button:hover {
-  transform: scale(1.05);
+  transform: translateX(-50%) scale(1.05);
 }
 
 .pyro-effect {

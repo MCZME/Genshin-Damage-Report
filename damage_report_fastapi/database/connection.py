@@ -27,16 +27,23 @@ class MySQLDatabase:
         self.pool = None
         
     def connect(self, host: str, port: int, user: str, 
-                password: str, database: str, pool_size: int = 5):
-        """创建MySQL连接池"""
+                password: str, database: str, pool_size: int = 20,
+                pool_timeout: int = 30):
+        """创建MySQL连接池
+        Args:
+            pool_size: 连接池大小，默认20
+            pool_timeout: 获取连接超时时间(秒)，默认30
+        """
         self.pool = pooling.MySQLConnectionPool(
             pool_name="mysql_pool",
             pool_size=pool_size,
+            pool_reset_session=True,
             host=host,
             port=port,
             user=user,
             password=password,
-            database=database
+            database=database,
+            connect_timeout=pool_timeout
         )
         
     def get_connection(self):
@@ -44,6 +51,23 @@ class MySQLDatabase:
         if not self.pool:
             raise Exception("MySQL连接池未初始化")
         return self.pool.get_connection()
+
+    def connection(self):
+        """提供上下文管理器支持的连接获取"""
+        class ConnectionContext:
+            def __init__(self, pool):
+                self.pool = pool
+                self.conn = None
+                
+            def __enter__(self):
+                self.conn = self.pool.get_connection()
+                return self.conn
+                
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                if self.conn:
+                    self.conn.close()
+        
+        return ConnectionContext(self.pool)
         
     def close(self):
         """关闭所有连接"""
