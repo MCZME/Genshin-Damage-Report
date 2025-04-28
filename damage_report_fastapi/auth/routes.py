@@ -1,7 +1,7 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from .schemas import UserCreate, UserLogin, Token, UserResponse
+from .schemas import UserCreate, Token, UserResponse
 from .service import (
     authenticate_user,
     create_access_token,

@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
+from mysql.connector import pooling
 
 class Database:
     def __init__(self):
@@ -21,5 +22,34 @@ class Database:
         if self.sync_client:
             self.sync_client.close()
 
+class MySQLDatabase:
+    def __init__(self):
+        self.pool = None
+        
+    def connect(self, host: str, port: int, user: str, 
+                password: str, database: str, pool_size: int = 5):
+        """创建MySQL连接池"""
+        self.pool = pooling.MySQLConnectionPool(
+            pool_name="mysql_pool",
+            pool_size=pool_size,
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database
+        )
+        
+    def get_connection(self):
+        """从连接池获取连接"""
+        if not self.pool:
+            raise Exception("MySQL连接池未初始化")
+        return self.pool.get_connection()
+        
+    def close(self):
+        """关闭所有连接"""
+        if self.pool:
+            self.pool.closeall()
+
 # 全局数据库实例
 db = Database()
+mysql_db = MySQLDatabase()

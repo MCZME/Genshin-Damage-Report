@@ -1,18 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { setupLayouts } from 'virtual:generated-layouts'
-import generatedRoutes from '~pages'
+import HomePage from '../pages/HomePage.vue'
 
-const routes = setupLayouts(generatedRoutes)
+const routes = [
+  {
+    path: '/',
+    name: 'Home',
+    component: HomePage
+  }
+]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      redirect: '/damage'
-    },
-    ...routes
-  ]
+  history: createWebHistory(),
+  routes
 })
 
 export default router

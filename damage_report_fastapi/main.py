@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database.connection import db
+from database.connection import db, mysql_db
 from config import settings
 from routers.damage_report_routes import router as damage_router
 from auth.routes import router as auth_router
+from routers.sticker_routes import router as sticker_router
 from services.logging_monitoring import MonitoringMiddleware, LoggingRoute
 from services.security import SecurityMiddleware
 
@@ -12,9 +13,17 @@ from services.security import SecurityMiddleware
 async def lifespan(app: FastAPI):
     # 启动时连接数据库
     await db.connect(settings["database"]["mongo_uri"], settings["database"]["db_name"])
+    mysql_db.connect(
+        host=settings["database"]["mysql_host"],
+        port=settings["database"]["mysql_port"],
+        user=settings["database"]["mysql_user"],
+        password=settings["database"]["mysql_password"],
+        database=settings["database"]["mysql_db"]
+    )
     yield
     # 关闭时断开数据库连接
     await db.close()
+    mysql_db.close()
 
 app = FastAPI(
     title=settings["app"]["name"],
@@ -38,3 +47,4 @@ app.add_middleware(
 
 app.include_router(damage_router)
 app.include_router(auth_router)
+app.include_router(sticker_router)

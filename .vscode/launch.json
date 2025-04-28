@@ -1,7 +1,6 @@
 {
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "FastAPI",
             "type": "debugpy",
@@ -13,6 +12,26 @@
             ],
             "jinja": true,
             "cwd": "${workspaceFolder}/damage_report_fastapi"
+        },
+        {
+            "name": "Vue: Debug Client",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/damage_report_vue",
+            "sourceMaps": true,
+            "pathMapping": {
+                "/src": "${workspaceFolder}/damage_report_vue/src"
+            }
+        },
+        {
+            "name": "Vue: Debug Server",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/damage_report_vue",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "skipFiles": ["<node_internals>/**"]
         }
     ]
 }

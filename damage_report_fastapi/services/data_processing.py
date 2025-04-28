@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List
 from fastapi import HTTPException
-from ..database import crud
+from database import crud
 
 class DataProcessor:
     def __init__(self):

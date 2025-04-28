@@ -9,7 +9,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('damage_report.log'),
+        logging.FileHandler('../logs/damage_report.log'), 
         logging.StreamHandler()
     ]
 )
