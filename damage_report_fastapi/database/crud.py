@@ -1,7 +1,37 @@
-from .connection import db
+from .connection import db, mysql_db
 from typing import Optional, Dict, Any
+from contextlib import asynccontextmanager
 
 class CRUD:
+    @staticmethod
+    @asynccontextmanager
+    async def get_mysql_conn():
+        """获取MySQL异步连接"""
+        async with mysql_db.get_connection() as conn:
+            yield conn
+
+    @staticmethod
+    async def create_damage_report(report_data: Dict[str, Any]):
+        """创建损害报告（MySQL）"""
+        async with CRUD.get_mysql_conn() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "INSERT INTO damage_reports (title, description) VALUES (%s, %s)",
+                    (report_data['title'], report_data['description'])
+                )
+                await conn.commit()
+                return cursor.lastrowid
+
+    @staticmethod
+    async def get_damage_report(report_id: int):
+        """获取损害报告（MySQL）"""
+        async with CRUD.get_mysql_conn() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT * FROM damage_reports WHERE id = %s",
+                    (report_id,)
+                )
+                return await cursor.fetchone()
     @staticmethod
     async def insert_one(collection: str, document: Dict[str, Any]):
         """插入单个文档"""

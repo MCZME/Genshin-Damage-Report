@@ -13,17 +13,20 @@ from services.security import SecurityMiddleware
 async def lifespan(app: FastAPI):
     # 启动时连接数据库
     await db.connect(settings["database"]["mongo_uri"], settings["database"]["db_name"])
-    mysql_db.connect(
+    await mysql_db.connect(
         host=settings["database"]["mysql_host"],
-        port=settings["database"]["mysql_port"],
+        port=int(settings["database"]["mysql_port"]),
         user=settings["database"]["mysql_user"],
         password=settings["database"]["mysql_password"],
-        database=settings["database"]["mysql_db"]
+        database=settings["database"]["mysql_db"],
+        pool_size=10
     )
     yield
     # 关闭时断开数据库连接
     await db.close()
-    mysql_db.close()
+    if mysql_db.pool:
+        mysql_db.pool.close()
+        await mysql_db.pool.wait_closed()
 
 app = FastAPI(
     title=settings["app"]["name"],

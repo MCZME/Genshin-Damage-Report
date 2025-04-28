@@ -1,6 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
-from mysql.connector import pooling
+import asyncmy
+from contextlib import asynccontextmanager
 
 class Database:
     def __init__(self):
@@ -26,54 +27,39 @@ class MySQLDatabase:
     def __init__(self):
         self.pool = None
         
-    def connect(self, host: str, port: int, user: str, 
-                password: str, database: str, pool_size: int = 20,
-                pool_timeout: int = 30):
-        """创建MySQL连接池
-        Args:
-            pool_size: 连接池大小，默认20
-            pool_timeout: 获取连接超时时间(秒)，默认30
-        """
-        self.pool = pooling.MySQLConnectionPool(
-            pool_name="mysql_pool",
-            pool_size=pool_size,
-            pool_reset_session=True,
+    async def connect(self, host: str, port: int, user: str,
+                     password: str, database: str, pool_size: int = 10):
+        """创建异步MySQL连接池"""
+        self.pool = await asyncmy.create_pool(
             host=host,
             port=port,
             user=user,
             password=password,
-            database=database,
-            connect_timeout=pool_timeout
+            db=database,
+            minsize=1,
+            maxsize=pool_size,
+            autocommit=True
         )
-        
-    def get_connection(self):
-        """从连接池获取连接"""
+
+    @asynccontextmanager
+    async def get_connection(self):
+        """异步上下文管理器获取连接"""
         if not self.pool:
             raise Exception("MySQL连接池未初始化")
-        return self.pool.get_connection()
+        async with self.pool.acquire() as conn:
+            yield conn
 
-    def connection(self):
-        """提供上下文管理器支持的连接获取"""
-        class ConnectionContext:
-            def __init__(self, pool):
-                self.pool = pool
-                self.conn = None
-                
-            def __enter__(self):
-                self.conn = self.pool.get_connection()
-                return self.conn
-                
-            def __exit__(self, exc_type, exc_val, exc_tb):
-                if self.conn:
-                    self.conn.close()
+    # 保留同步连接作为fallback
+    def sync_connect(self, **kwargs):
+        """同步连接方式（兼容旧代码）"""
+        return asyncmy.connect(
+            host=kwargs['host'],
+            port=kwargs['port'],
+            user=kwargs['user'],
+            password=kwargs['password'],
+            database=kwargs['database']
+        )
         
-        return ConnectionContext(self.pool)
-        
-    def close(self):
-        """关闭所有连接"""
-        if self.pool:
-            self.pool.closeall()
-
 # 全局数据库实例
 db = Database()
 mysql_db = MySQLDatabase()
