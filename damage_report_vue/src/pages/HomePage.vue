@@ -5,10 +5,10 @@
       :key="meme.id"
       class="meme-item"
       :style="{
-        left: meme.position.x,
-        top: meme.position.y,
-        transform: `rotate(${meme.rotation}deg) scale(${meme.scale})`,
-        backgroundColor: meme.color
+        left: meme?.position?.x ?? '50%',
+        top: meme?.position?.y ?? '50%',
+        transform: `rotate(${meme?.rotation ?? 0}deg) scale(${meme?.scale ?? 1})`,
+        backgroundImage: meme?.image ? `url(${meme.image})` : 'none'
       }"
     ></div>
 
@@ -24,46 +24,86 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-
-const ELEMENT_COLORS = [
-  '#FF3366', // 火
-  '#00B4D8', // 水
-  '#70E000', // 草
-  '#FFD700', // 岩
-  '#9D4EDD', // 雷
-  '#FF914D', // 冰
-  '#6A4C93'  // 风
-]
+import config from '../config.js'
 
 const memes = ref([])
 
-const getRandomElementColor = () => {
-  return ELEMENT_COLORS[Math.floor(Math.random() * ELEMENT_COLORS.length)]
+const fetchStickers = async () => {
+  try {
+    const response = await fetch(`${config.api.baseUrl}${config.api.endpoints.stickers}/random?count=15`)
+    const data = await response.json()
+    return data.data.stickers
+  } catch (error) {
+    console.error('获取表情包失败:', error)
+    return []
+  }
 }
 
-const generateMeme = () => ({
-  id: Date.now() + Math.random(),
-  color: getRandomElementColor(),
-  position: {
-    x: Math.random() * 90 + '%',
-    y: Math.random() * 90 + '%'
-  },
-  rotation: Math.random() * 30 - 15,
-  scale: 0.8 + Math.random() * 0.4
-})
-
-const generateMemes = () => {
-  const count = Math.floor(Math.random() * 6 + 10) // 10-15个
-  memes.value = Array.from({ length: count }, generateMeme)
+const checkPositionOverlap = (position, memes, minDistance = 20) => {
+  for (const meme of memes) {
+    const dx = Math.abs(parseFloat(position.x) - parseFloat(meme.position.x))
+    const dy = Math.abs(parseFloat(position.y) - parseFloat(meme.position.y))
+    if (dx < minDistance && dy < minDistance) {
+      return true
+    }
+  }
+  return false
 }
 
-const refreshWall = () => {
+const generateMemes = async () => {
+  try {
+    const count = Math.floor(Math.random() * 6 + 10) // 10-15个
+    const stickers = await fetchStickers()
+    const newMemes = []
+    let stickerCount = 0
+    
+    for (let i = 0; i < count; i++) {
+      const sticker = stickers[stickerCount] || {}
+      let position, attempts = 0
+      stickerCount ++
+      do {
+        position = {
+          x: 5 + Math.random() * 80 + '%',
+          y: 10 + Math.random() * 70 + '%'
+        }
+        attempts++
+      } while (attempts < 10 && checkPositionOverlap(position, newMemes))
+      
+      newMemes.push({
+        id: Date.now() + Math.random(),
+        position,
+        rotation: Math.random() * 30 - 15,
+        scale: 0.8 + Math.random() * 0.4,
+        image: sticker.file_name ? `http://116.198.207.202:40061${sticker.file_name}` : null
+      })
+    }
+    
+    memes.value = newMemes
+  } catch (error) {
+    console.error('生成表情包失败:', error)
+    // 返回默认meme数据
+    const count = Math.floor(Math.random() * 6 + 10)
+    memes.value = Array.from({ length: count }, () => ({
+      id: Date.now() + Math.random(),
+      position: {
+        x: Math.random() * 90 + '%',
+        y: Math.random() * 90 + '%'
+      },
+      rotation: Math.random() * 30 - 15,
+      scale: 0.8 + Math.random() * 0.4,
+      image: null
+    }))
+  }
+}
+
+const refreshWall = async () => {
   memes.value = []
-  nextTick(() => generateMemes())
+  await nextTick()
+  await generateMemes()
 }
 
-onMounted(() => {
-  generateMemes()
+onMounted(async () => {
+  await generateMemes()
 })
 </script>
 
@@ -73,7 +113,7 @@ onMounted(() => {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: url('http://116.198.207.202:40061/i/2025/04/28/pmkq4n.png') 0 0/100% 100% no-repeat;
+  background: url('http://116.198.207.202:40061/i/2025/04/28/txohxa.png') 0 0/100% 100% no-repeat;
 }
 
 .meme-item {
@@ -81,8 +121,10 @@ onMounted(() => {
   width: 120px;
   height: 120px;
   border-radius: 20px;
-  box-shadow: 0 8px 15px rgba(0,0,0,0.3);
   transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .refresh-button {

@@ -13,8 +13,26 @@ async def get_random_stickers(count: Optional[int] = 25):
         conn = mysql_db.get_connection()
         cursor = conn.cursor(dictionary=True)
         
-        query = "SELECT name, file_name FROM `sticker` ORDER BY RAND() LIMIT %s"
-        cursor.execute(query, (count,))
+        # 获取贴纸总数
+        cursor.execute("SELECT COUNT(*) as total FROM `sticker`")
+        total = cursor.fetchone()['total']
+        
+        if total == 0:
+            return {
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "stickers": []
+                }
+            }
+        
+        # 生成不重复的随机ID列表
+        import random
+        random_ids = random.sample(range(1, total + 1), min(count, total))  # sample保证不重复
+        
+        # 查询随机ID对应的贴纸
+        query = f"SELECT name, file_name FROM `sticker` WHERE id IN {tuple(random_ids)}"
+        cursor.execute(query)
         result = cursor.fetchall()
         
         cursor.close()
