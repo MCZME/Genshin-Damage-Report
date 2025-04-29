@@ -233,6 +233,30 @@ onMounted(async () => {
   background-repeat: no-repeat;
   background-position: center;
   filter: url(#meme-outline);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.meme-item:hover {
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  20% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(2px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(1deg);
+  }
 }
 
 @keyframes tearOff {

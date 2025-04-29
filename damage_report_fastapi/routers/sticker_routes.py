@@ -11,12 +11,9 @@ async def get_random_stickers(count: Optional[int] = 25):
     - count: 返回的表情包数量，默认为25
     """
     try:
-        print(f"{time.asctime()}获取随机表情包")
         from database.crud import CRUD
         async with CRUD.get_mysql_conn() as conn:
-            print(f"{time.asctime()}获取MySQL连接")
             async with conn.cursor() as cursor:
-                print(f"{time.asctime()}创建游标")
                 # 获取贴纸总数
                 await cursor.execute("SELECT COUNT(*) FROM sticker")
                 total = (await cursor.fetchone())[0]
@@ -39,7 +36,6 @@ async def get_random_stickers(count: Optional[int] = 25):
                     (tuple(random_ids),)
                 )
                 result = await cursor.fetchall()
-            print(f"{time.asctime()}--")
             
             cursor.close()
         
