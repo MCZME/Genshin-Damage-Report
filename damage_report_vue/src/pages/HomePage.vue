@@ -8,9 +8,7 @@
     </filter>
   </svg>
   <div class="meme-wall">
-    <div v-if="loading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-    </div>
+    <Loading :isLoading="loadingStatus" />
       <div 
       v-for="meme in memes" 
       :key="meme.id"
@@ -37,10 +35,10 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+import Loading from '../components/Loading.vue'
 
-const loading = ref(false)
+const loadingStatus = ref(false)
 const generatePoints = (numPoints) => {
-  // 页面尺寸 (100vw x 100vh)
   const pageWidth = 90
   const pageHeight = 90
   
@@ -99,16 +97,16 @@ const fetchStickers = async () => {
 }
 
 const generateMemes = async () => {
-  loading.value = true
+  loadingStatus.value = true
   memes.value = []
   try {
     const count = Math.floor(Math.random() * 6 + 10)
     let stickerCount = 0
     const stickers = await fetchStickers()
     Stickers.value = stickers
-    memes.value = []
+    memes.value = []    
     for (let i = 0; i < count; i++) {
-      if (i === 0) loading.value = false
+      if (i === 0) setTimeout(() => {loadingStatus.value = false }, 1000)
       await new Promise(resolve => setTimeout(resolve, 300))
       const sticker = stickers[stickerCount] || {}
       let position
@@ -183,38 +181,21 @@ const handleWallClick = (e) => {
 }
 
 onMounted(async () => {
-  await generateMemes()
+  if (!localStorage.getItem('hasVisited')) {
+    loadingStatus.value = true
+    localStorage.setItem('hasVisited', 'true')
+    setTimeout(async () => {
+      await generateMemes()
+      loadingStatus.value = false
+    }, 3000)
+  } else {
+    await generateMemes()
+  }
   document.querySelector('.meme-wall').addEventListener('click', handleWallClick)
 })
 </script>
 
 <style scoped>
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 5px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #FF3366;
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .meme-wall {
   position: relative;
   width: 100vw;
@@ -235,10 +216,26 @@ onMounted(async () => {
   filter: url(#meme-outline);
   transition: transform 0.2s ease;
   cursor: pointer;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .meme-item:hover {
   animation: shake 0.5s ease;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  80% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes shake {
@@ -262,64 +259,64 @@ onMounted(async () => {
 @keyframes tearOff {
   0% {
       transform: 
-        translate3d(0, 0, 100px)
+        translate3d(0, 0, 500px)
         scale(1.05)
         rotate3d(0,0,1,-3deg);
     }
     3% {
       transform: 
-        translate3d(0, 0, 100px)
+        translate3d(0, 0, 500px)
         scale(1.05)
         rotate3d(0,0,1,3deg);
     }
     5% {
       transform: 
-        translate3d(0, 0, 100px)
+        translate3d(0, 0, 500px)
         scale(1.1)
         rotate3d(0.5,0.2,0.1,15deg);
     }
     7% {
       transform: 
-        translate3d(5vw, 2vh, 100px)
+        translate3d(5vw, 2vh, 500px)
         scale(1.1)
         rotate3d(0.6,0.3,0.2,20deg);
     }
     10% {
       transform: 
-        translate3d(10vw, 5vh, 120px)
+        translate3d(10vw, 5vh, 500px)
         scale(1.1)
         rotate3d(0.8,0.3,0.2,30deg);
     }
     20% {
       transform: 
-        translate3d(20vw, 15vh, 150px)
+        translate3d(20vw, 15vh, 500px)
         scale(1.05)
         rotate3d(0.7,0.4,0.3,45deg);
     }
     35% {
       transform: 
-        translate3d(35vw, 30vh, 180px)
+        translate3d(35vw, 30vh, 500px)
         scale(1)
         rotate3d(0.6,0.5,0.4,60deg)
         skew(3deg, 2deg);
     }
     50% {
       transform: 
-        translate3d(50vw, 45vh, 200px)
+        translate3d(50vw, 45vh, 500px)
         scale(0.95)
         rotate3d(0.5,0.4,0.3,75deg)
         skew(5deg, 3deg);
     }
     65% {
       transform: 
-        translate3d(65vw, 60vh, 220px)
+        translate3d(65vw, 60vh, 500px)
         scale(0.9)
         rotate3d(0.4,0.3,0.2,85deg)
         skew(7deg, 5deg);
     }
     80% {
       transform: 
-        translate3d(80vw, 75vh, 240px)
+        translate3d(80vw, 75vh, 500px)
         scale(0.85)
         rotate3d(0.3,0.2,0.1,90deg)
         skew(9deg, 6deg);
@@ -327,7 +324,7 @@ onMounted(async () => {
     }
     95% {
       transform: 
-        translate3d(95vw, 90vh, 260px)
+        translate3d(95vw, 90vh, 500px)
         scale(0.8)
         rotate3d(0.2,0.1,0.05,95deg)
         skew(11deg, 7deg);
@@ -335,7 +332,7 @@ onMounted(async () => {
     }
     100% {
       transform:
-        translate3d(110vw, 105vh, 300px)
+        translate3d(110vw, 105vh, 500px)
         rotate3d(0.1,0.05,0,100deg)
         scale(0.75)
         skew(12deg, 8deg);
