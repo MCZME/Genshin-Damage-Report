@@ -1,7 +1,7 @@
 <template>
   <svg width="0" height="0" style="position:absolute">
     <filter id="meme-outline">
-      <feMorphology operator="dilate" radius="4" in="SourceAlpha" result="thicken" />
+      <feMorphology operator="dilate" radius="3" in="SourceAlpha" result="thicken" />
       <feFlood flood-color="#F5F5DC" result="color" />
       <feComposite in="color" in2="thicken" operator="in" />
       <feComposite in="SourceGraphic" operator="over" />
@@ -11,16 +11,18 @@
     <div v-if="loading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>
-    <div 
+      <div 
       v-for="meme in memes" 
       :key="meme.id"
       class="meme-item"
+      :data-id="meme.id"
       :style="{
         left: meme?.position?.x ?? '50%',
         top: meme?.position?.y ?? '50%',
         transform: `rotate(${meme?.rotation ?? 0}deg) scale(${meme?.scale ?? 1})`,
         backgroundImage: meme?.image ? `url(${meme.image})` : 'none'
       }"
+      @click="removeMeme(meme.id)"
     ></div>
 
     <button 
@@ -42,14 +44,7 @@ const generatePoints = (numPoints) => {
   const pageWidth = 90
   const pageHeight = 90
   
-  // 按钮区域 
-  const buttonTop = 60
-  const buttonHeight = 10
-  const buttonWidth = 20
-  const buttonLeft = (pageWidth - buttonWidth) / 2
-  
-  // 可用区域为顶部70% + 按钮下方20%
-  const availableHeight = buttonTop + (100 - buttonTop - buttonHeight)
+  const availableHeight = pageHeight
   
   // 计算可用区域的行列数
   const cols = Math.ceil(Math.sqrt(numPoints * (pageWidth / availableHeight)))
@@ -71,26 +66,13 @@ const generatePoints = (numPoints) => {
     
     // 添加安全随机偏移
     const safeOffsetX = Math.min(cellWidth * 0.3, x, pageWidth - x)
-    // 计算y坐标安全偏移
-    let maxY
-    if (y < buttonTop) {
-      maxY = buttonTop - y
-    } else {
-      maxY = pageHeight - buttonHeight - y
-    }
-    const safeOffsetY = Math.min(cellHeight * 0.3, y, maxY)
+    const safeOffsetY = Math.min(cellHeight * 0.3, y)
     x += (Math.random() - 0.5) * safeOffsetX * 2
     y += (Math.random() - 0.5) * safeOffsetY * 2
     
     // 确保坐标在有效范围内
-    x = Math.max(0, Math.min(pageWidth, x))
-    y = Math.max(0, Math.min(pageHeight-5, y-5))
-    // 确保不覆盖按钮区域
-    if (y > buttonTop && y < buttonTop + buttonHeight && 
-        x > buttonLeft && x < buttonLeft + buttonWidth) {
-      y = Math.random() * (pageHeight - buttonHeight) + buttonHeight / 2
-      x = Math.random() * (pageWidth - buttonWidth) + buttonWidth / 2
-    }
+    x = Math.max(3, Math.min(pageWidth, x-3))
+    y = Math.max(8, Math.min(pageHeight, y-5))
     
     points.push({
       x: x + '%',
@@ -103,10 +85,11 @@ const generatePoints = (numPoints) => {
 import config from '../config.js'
 
 const memes = ref([])
+const Stickers = ref([])
 
 const fetchStickers = async () => {
   try {
-    const response = await fetch(`${config.api.baseUrl}${config.api.endpoints.stickers}/random?count=15`)
+    const response = await fetch(`${config.api.baseUrl}${config.api.endpoints.stickers}/random?count=25`)
     const data = await response.json()
     return data.data.stickers
   } catch (error) {
@@ -119,10 +102,10 @@ const generateMemes = async () => {
   loading.value = true
   memes.value = []
   try {
-    const count = Math.floor(Math.random() * 6 + 10) // 10-15个
-    const stickers = await fetchStickers()
+    const count = Math.floor(Math.random() * 6 + 10)
     let stickerCount = 0
-    
+    const stickers = await fetchStickers()
+    Stickers.value = stickers
     memes.value = []
     for (let i = 0; i < count; i++) {
       if (i === 0) loading.value = false
@@ -136,15 +119,15 @@ const generateMemes = async () => {
       memes.value = [...memes.value, {
         id: Date.now() + Math.random(),
         position,
-        rotation: Math.random() * 30 - 15,
+        rotation: Math.random() * 60 - 15,
         scale: 0.8 + Math.random() * 0.4,
-        image: sticker.file_name ? `http://116.198.207.202:40061${sticker.file_name}` : null
+        image: sticker[1] ? `http://116.198.207.202:40061${sticker[1]}` : null
       }]
     }
   } catch (error) {
     console.error('生成表情包失败:', error)
     // 返回默认meme数据
-    const count = Math.floor(Math.random() * 6 + 10)
+    const count = Math.floor(Math.random() * 6 + 15)
     memes.value = Array.from({ length: count }, () => ({
       id: Date.now() + Math.random(),
       position: {
@@ -164,8 +147,44 @@ const refreshWall = async () => {
   await generateMemes()
 }
 
+const removeMeme = (id) => {
+  const meme = memes.value.find(m => m.id === id)
+  if (meme) {
+    const memeElement = document.querySelector(`.meme-item[data-id="${id}"]`)
+    if (memeElement) {
+      // 添加tearing类触发完整动画
+      memeElement.classList.add('tearing')
+      // 动画结束后移除元素和类
+      setTimeout(() => {
+        memes.value = memes.value.filter(m => m.id !== id)
+        memeElement.classList.remove('tearing')
+      }, 2000)
+    } else {
+      memes.value = memes.value.filter(m => m.id !== id)
+    }
+  }
+}
+
+const handleWallClick = (e) => {
+  if (e.target.classList.contains('meme-wall')) {
+    const randomSticker = Stickers.value[Math.floor(Math.random() * Stickers.value.length)]
+    const newMeme = {
+      id: Date.now() + Math.random(),
+      position: {
+        x: ((Math.max(160, Math.min(e.clientX, window.innerWidth - 80)) - 80) / window.innerWidth * 100) + '%',
+        y: ((Math.max(160, Math.min(e.clientY, window.innerHeight - 80)) - 80) / window.innerHeight * 100) + '%'
+      },
+      rotation: Math.random() * 30 - 15,
+      scale: 0.8 + Math.random() * 0.4,
+      image: `http://116.198.207.202:40061${randomSticker[1]}`
+    }
+    memes.value = [...memes.value, newMeme]
+  }
+}
+
 onMounted(async () => {
   await generateMemes()
+  document.querySelector('.meme-wall').addEventListener('click', handleWallClick)
 })
 </script>
 
@@ -210,11 +229,102 @@ onMounted(async () => {
   width: 120px;
   height: 120px;
   border-radius: 20px;
-  transition: all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
   filter: url(#meme-outline);
+}
+
+@keyframes tearOff {
+  0% {
+      transform: 
+        translate3d(0, 0, 100px)
+        scale(1.05)
+        rotate3d(0,0,1,-3deg);
+    }
+    3% {
+      transform: 
+        translate3d(0, 0, 100px)
+        scale(1.05)
+        rotate3d(0,0,1,3deg);
+    }
+    5% {
+      transform: 
+        translate3d(0, 0, 100px)
+        scale(1.1)
+        rotate3d(0.5,0.2,0.1,15deg);
+    }
+    7% {
+      transform: 
+        translate3d(5vw, 2vh, 100px)
+        scale(1.1)
+        rotate3d(0.6,0.3,0.2,20deg);
+    }
+    10% {
+      transform: 
+        translate3d(10vw, 5vh, 120px)
+        scale(1.1)
+        rotate3d(0.8,0.3,0.2,30deg);
+    }
+    20% {
+      transform: 
+        translate3d(20vw, 15vh, 150px)
+        scale(1.05)
+        rotate3d(0.7,0.4,0.3,45deg);
+    }
+    35% {
+      transform: 
+        translate3d(35vw, 30vh, 180px)
+        scale(1)
+        rotate3d(0.6,0.5,0.4,60deg)
+        skew(3deg, 2deg);
+    }
+    50% {
+      transform: 
+        translate3d(50vw, 45vh, 200px)
+        scale(0.95)
+        rotate3d(0.5,0.4,0.3,75deg)
+        skew(5deg, 3deg);
+    }
+    65% {
+      transform: 
+        translate3d(65vw, 60vh, 220px)
+        scale(0.9)
+        rotate3d(0.4,0.3,0.2,85deg)
+        skew(7deg, 5deg);
+    }
+    80% {
+      transform: 
+        translate3d(80vw, 75vh, 240px)
+        scale(0.85)
+        rotate3d(0.3,0.2,0.1,90deg)
+        skew(9deg, 6deg);
+        opacity: 1;
+    }
+    95% {
+      transform: 
+        translate3d(95vw, 90vh, 260px)
+        scale(0.8)
+        rotate3d(0.2,0.1,0.05,95deg)
+        skew(11deg, 7deg);
+        opacity: 0.5;
+    }
+    100% {
+      transform:
+        translate3d(110vw, 105vh, 300px)
+        rotate3d(0.1,0.05,0,100deg)
+        scale(0.75)
+        skew(12deg, 8deg);
+        opacity: 0.2;
+    }
+}
+
+.meme-item.tearing {
+  animation: tearOff 2s linear forwards;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 500px;
 }
 
 .refresh-button {
