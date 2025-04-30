@@ -36,8 +36,6 @@ async def get_random_stickers(count: Optional[int] = 25):
                     (tuple(random_ids),)
                 )
                 result = await cursor.fetchall()
-            
-            cursor.close()
         
         return {
             "code": 200,

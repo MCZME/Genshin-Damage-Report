@@ -58,3 +58,15 @@ class CRUD:
         query = query or {}
         cursor = db.db[collection].find(query)
         return [doc async for doc in cursor]
+
+    @staticmethod
+    async def get_avatar_path(character_name: str):
+        """获取角色头像路径"""
+        async with CRUD.get_mysql_conn() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT file_path FROM avatar WHERE name = %s",
+                    (character_name,)
+                )
+                result = await cursor.fetchone()
+                return result[0] if result else None
