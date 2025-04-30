@@ -8,7 +8,7 @@
     </filter>
   </svg>
   <div class="meme-wall">
-    <Loading :isLoading="loadingStatus" />
+    <Loading v-if="loadingE" :isLoading="loadingStatus" />
       <div 
       v-for="meme in memes" 
       :key="meme.id"
@@ -36,8 +36,10 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import Loading from '../components/Loading.vue'
+import { useRouter } from 'vue-router'
 
 const loadingStatus = ref(false)
+const loadingE = ref(false)
 const generatePoints = (numPoints) => {
   const pageWidth = 90
   const pageHeight = 90
@@ -98,6 +100,7 @@ const fetchStickers = async () => {
 
 const generateMemes = async () => {
   loadingStatus.value = true
+  loadingE.value = true
   memes.value = []
   try {
     const count = Math.floor(Math.random() * 6 + 10)
@@ -106,7 +109,12 @@ const generateMemes = async () => {
     Stickers.value = stickers
     memes.value = []    
     for (let i = 0; i < count; i++) {
-      if (i === 0) setTimeout(() => {loadingStatus.value = false }, 1000)
+      if (i === 0) setTimeout(() => {
+        loadingStatus.value = false 
+        setTimeout(() => {
+          loadingE.value = false
+        }, 10000);
+      }, 1000)
       await new Promise(resolve => setTimeout(resolve, 300))
       const sticker = stickers[stickerCount] || {}
       let position
@@ -139,10 +147,20 @@ const generateMemes = async () => {
   }
 }
 
+const router = useRouter()
+
 const refreshWall = async () => {
-  memes.value = []
+  loadingStatus.value = true
+  loadingE.value = true
   await nextTick()
-  await generateMemes()
+  
+  // 显示Loading动画1秒
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  
+  // 跳转到信息页
+  router.push('/info')
+  loadingStatus.value = false
+  loadingE.value = false
 }
 
 const removeMeme = (id) => {

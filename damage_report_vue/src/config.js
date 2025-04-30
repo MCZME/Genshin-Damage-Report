@@ -6,7 +6,8 @@ export default {
     endpoints: {
       damageReport: '/api/damage-reports',
       stickers: '/api/stickers',
-      auth: '/api/auth'
+      auth: '/api/auth',
+      avatar: '/api/avatar',
     },
     timeout: 10000 // 请求超时时间(毫秒)
   },
