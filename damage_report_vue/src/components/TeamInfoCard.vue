@@ -2,15 +2,13 @@
   <v-card class="team-card" :elevation="4">
     <v-card-title class="d-flex justify-space-between">
       <span>{{ team.name }}</span>
-      <div class="d-flex align-center">
-        <div class="text-center mr-4">
-          <div class="text-caption">DPS</div>
-          <div class="text-h6">{{ team.dps }}</div>
-        </div>
-        <div class="text-center mr-4">
-          <div class="text-caption">模拟时间</div>
-          <div class="text-h6">{{ team.simulationTime }}s</div>
-        </div>
+      <div class="d-flex align-center" style="gap: 8px">
+        <v-chip color="primary" small>
+          DPS: {{ team.dps }}
+        </v-chip>
+        <v-chip color="primary" small>
+          模拟时间: {{ team.simulationTime }}s
+        </v-chip>
         <v-chip color="primary" small>
           {{ formatDate(team.createdAt) }}
         </v-chip>
@@ -28,8 +26,8 @@
             <v-img
               cover
               :src="'http://116.198.207.202:40061/i/2025/05/01/3e2suj.png'"
-              width="80"
-              height="80"
+              width="100%"
+              height="100%"
               class="member-bg"
               :style="{'filter': getElementFilter(member.element)}"
             ></v-img>
@@ -37,8 +35,8 @@
             <!-- 中间层 - 元素图标 -->
             <v-img
               :src="getElementImage(member.element)"
-              width="80"
-              height="80"
+              width="100%"
+              height="100%"
               class="member-element"
             ></v-img>
             
@@ -46,8 +44,8 @@
             <v-img
               :src="getCharacterImage(member.name)"
               :alt="member.name"
-              width="80"
-              height="80"
+              width="100%"
+              height="100%"
               class="member-avatar"
             ></v-img>
             
@@ -60,20 +58,62 @@
             <div class="constellation-badge">
               {{ member.constellation }}
             </div>
-            
-            <!-- 天赋 -->
-            <div class="talents-badge">
+          </div>
+          <!-- 天赋 -->
+          <div class="talents-badge">
               天赋:{{ member.talentLevels.join('/') }}
+          </div>
+          <!-- 武器和圣遗物 -->
+          <div class="equipment-container">
+            <!-- 武器 -->
+            <div class="weapon-container">
+              <div class="equipment-image-container">
+                <v-img
+                  :src="getWeaponImage(member.weapon)"
+                  class="equipment-image"
+                ></v-img>
+                <div class="refinement-badge" v-if="member.weapon.refinement">
+                  R{{ member.weapon.refinement }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- 圣遗物 -->
+            <div class="artifacts-container">
+              <template v-if="!member.artifacts.set1 && !member.artifacts.set2">
+                <div class="no-set-effect">无套装效果</div>
+              </template>
+              <template v-else-if="member.artifacts.set1 === member.artifacts.set2">
+                <div class="equipment-image-container">
+                  <v-img
+                    :src="getArtifactImage(member.artifacts.set1)"
+                    class="equipment-image"
+                  ></v-img>
+                  <div class="set-effect-badge">
+                    {{ member.artifacts.set1Count }}
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="equipment-image-container">
+                  <v-img
+                    :src="getArtifactImage(member.artifacts.set1)"
+                    class="equipment-image"
+                  ></v-img>
+                  <div class="set-effect-badge">2</div>
+                </div>
+                <div class="equipment-image-container" v-if="member.artifacts.set2">
+                  <v-img
+                    :src="getArtifactImage(member.artifacts.set2)"
+                    class="equipment-image"
+                  ></v-img>
+                  <div class="set-effect-badge">2</div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 文本介绍 -->
-      <div class="description mt-4">
-        <p class="text-body-2">{{ team.description }}</p>
-      </div>
-
     </v-card-text>
   </v-card>
 </template>
@@ -86,7 +126,9 @@ export default {
   name: 'TeamInfoCard',
   data() {
     return {
-      avatarUrls: {}
+      avatarUrls: {},
+      weaponUrls: {},
+      artifactUrls: {}
     }
   },
   props: {
@@ -106,17 +148,21 @@ export default {
     }
   },
   async created() {
-    await this.loadAvatars()
+    await Promise.all([
+      this.loadAvatars(),
+      this.loadWeapons(),
+      this.loadArtifacts()
+    ])
   },
   methods: {
     formatDate(timestamp) {
       return new Date(timestamp).toLocaleDateString()
     },
     getWeaponImage(weaponName) {
-      return `https://example.com/weapons/${weaponName}.png`
+      return this.weaponUrls[weaponName] || `https://example.com/weapons/${weaponName}.png`
     },
     getArtifactImage(artifactName) {
-      return `https://example.com/artifacts/${artifactName}.png`
+      return this.artifactUrls[artifactName] || `https://example.com/artifacts/${artifactName}.png`
     },
     getCharacterImage(characterName) {
       return this.avatarUrls[characterName] || '/assets/default-avatar.png'
@@ -157,6 +203,45 @@ export default {
           this.avatarUrls[member.name] = '/assets/default-avatar.png'
         }
       }
+    },
+    async loadWeapons() {
+      for (const member of this.team.members) {
+        try {
+          const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.weapon}`, {
+            params: { name: member.weapon }
+          })
+          this.weaponUrls[member.weapon] = response.data.file_path || '/assets/default-weapon.png'
+        } catch (error) {
+          console.error('获取武器图片失败:', error)
+          this.weaponUrls[member.weapon] = '/assets/default-weapon.png'
+        }
+      }
+    },
+    async loadArtifacts() {
+      for (const member of this.team.members) {
+        if (member.artifacts.set1) {
+          try {
+            const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.artifact}`, {
+              params: { name: member.artifacts.set1 }
+            })
+            this.artifactUrls[member.artifacts.set1] = response.data.file_path || '/assets/default-artifact.png'
+          } catch (error) {
+            console.error('获取圣遗物图片失败:', error)
+            this.artifactUrls[member.artifacts.set1] = '/assets/default-artifact.png'
+          }
+        }
+        if (member.artifacts.set2 && member.artifacts.set2 !== member.artifacts.set1) {
+          try {
+            const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.artifact}`, {
+              params: { name: member.artifacts.set2 }
+            })
+            this.artifactUrls[member.artifacts.set2] = response.data.file_path || '/assets/default-artifact.png'
+          } catch (error) {
+            console.error('获取圣遗物图片失败:', error)
+            this.artifactUrls[member.artifacts.set2] = '/assets/default-artifact.png'
+          }
+        }
+      }
     }
   }
 }
@@ -181,7 +266,7 @@ export default {
 
 .avatar-container {
   position: relative;
-  width: 80px;
+  width: 100px;
   height: 100px;
 }
 
@@ -191,7 +276,6 @@ export default {
   position: absolute;
   top: 0;
   left: 0;
-  border-radius: 4px;
 }
 
 .member-bg{
@@ -216,41 +300,83 @@ export default {
 
 .level-badge {
   position: absolute;
-  top: 0;
+  top: 0px;
   left: 0;
   background: rgba(0,0,0,0.7);
   color: white;
   padding: 2px 4px;
   font-size: 0.7rem;
   border-radius: 0 0 4px 0;
+  z-index: 4;
 }
 
 .constellation-badge {
   position: absolute;
-  top: 0;
+  top: 0px;
   right: 0;
   background: rgba(0,0,0,0.7);
   color: gold;
   padding: 2px 4px;
   font-size: 0.7rem;
   border-radius: 0 0 0 4px;
+  z-index: 4;
 }
 
 .talents-badge {
-  position: absolute;
-  bottom: 0;
+  position: relative;
+  height: 1rem;
   left: 0;
   right: 0;
   background: rgba(0,0,0,0.7);
   color: white;
-  padding: 2px;
   font-size: 0.7rem;
   text-align: center;
-  border-radius: 0 0 4px 4px;
+  z-index: 4;
 }
 
-.description {
-  white-space: pre-line;
+.equipment-container {
+  display: flex;
+}
+
+.weapon-container {
+  flex: 1;
+}
+
+.artifacts-container {
+  flex: 2;
+  display: flex;
+  gap: 4px;
+}
+
+.equipment-image-container {
+  position: relative;
+  width: 100%;
+  height: 40px;
+}
+
+.equipment-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.refinement-badge,
+.set-effect-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 1px 3px;
+  font-size: 0.6rem;
+  border-radius: 0 0 0 4px;
+}
+
+.no-set-effect {
+  font-size: 0.7rem;
+  color: #999;
+  text-align: center;
+  line-height: 40px;
 }
 
 .member-stats {

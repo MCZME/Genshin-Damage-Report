@@ -8,6 +8,8 @@ export default {
       stickers: '/api/stickers',
       auth: '/api/auth',
       avatar: '/api/avatar',
+      weapon: '/api/weapon',
+      artifact: '/api/artifact',
     },
     timeout: 10000 // 请求超时时间(毫秒)
   },

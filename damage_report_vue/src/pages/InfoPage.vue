@@ -57,8 +57,8 @@ export default {
               element: '火',
               constellation: 4,
               talentLevels: [1, 8, 8],
-              weapon: '渔获',
-              artifacts: ['绝缘之旗印4件']
+              weapon: '「渔获」',
+              artifacts: ['绝缘之旗印']
             },
             {
               name: '班尼特',
