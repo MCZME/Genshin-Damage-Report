@@ -1,6 +1,13 @@
 import { createApp } from 'vue'
 import { createVuetify } from 'vuetify'
 import config from './config'
+import Pyro_theme from '@/assets/theme/Pyro.js'
+import Hydro_theme from '@/assets/theme/Hydro.js'
+import Electro_theme from '@/assets/theme/Electro.js'
+import Cryo_theme from '@/assets/theme/Cryo.js'
+import Anemo_theme from '@/assets/theme/Anemo.js'
+import Geo_theme from '@/assets/theme/Geo.js'
+import Dendro_theme from '@/assets/theme/Dendro.js'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
@@ -13,22 +20,13 @@ const vuetify = createVuetify({
   directives,
   theme: {
     themes: {
-      light: {
-        colors: {
-          primary: '#1a237e',
-          secondary: '#0d47a1',
-          accent: '#e63946',
-          background: '#ffffff'
-        }
-      },
-      dark: {
-        colors: {
-          primary: '#90caf9',
-          secondary: '#64b5f6',
-          accent: '#ff8a80',
-          background: '#121212'
-        }
-      }
+      pyro: Pyro_theme,
+      hydro: Hydro_theme,
+      electro: Electro_theme,
+      cryo: Cryo_theme,
+      anemo: Anemo_theme,
+      geo: Geo_theme,
+      dendro: Dendro_theme
     }
   }
 })
