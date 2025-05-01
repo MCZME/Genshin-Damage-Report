@@ -6,7 +6,7 @@ from config import settings
 from routers.damage_report_routes import router as damage_router
 from auth.routes import router as auth_router
 from routers.sticker_routes import router as sticker_router
-from routers.avatar_routes import router as avatar_router
+from routers.game_resource_routes import router as resource_router
 from services.logging_monitoring import MonitoringMiddleware, LoggingRoute
 from services.security import SecurityMiddleware
 
@@ -52,4 +52,4 @@ app.add_middleware(
 app.include_router(damage_router)
 app.include_router(auth_router)
 app.include_router(sticker_router)
-app.include_router(avatar_router)
+app.include_router(resource_router)

@@ -70,3 +70,27 @@ class CRUD:
                 )
                 result = await cursor.fetchone()
                 return result[0] if result else None
+
+    @staticmethod
+    async def get_weapon_path(weapon_name: str):
+        """获取武器图片路径"""
+        async with CRUD.get_mysql_conn() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT file_path FROM weapon WHERE name = %s",
+                    (weapon_name,)
+                )
+                result = await cursor.fetchone()
+                return result[0] if result else None
+
+    @staticmethod
+    async def get_artifact_path(artifact_name: str):
+        """获取圣遗物图片路径"""
+        async with CRUD.get_mysql_conn() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT file_path FROM artifact WHERE name = %s",
+                    (artifact_name,)
+                )
+                result = await cursor.fetchone()
+                return result[0] if result else None
