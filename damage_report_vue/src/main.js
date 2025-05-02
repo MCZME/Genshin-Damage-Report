@@ -19,6 +19,7 @@ const vuetify = createVuetify({
   components,
   directives,
   theme: {
+    defaultTheme: 'dendro',
     themes: {
       pyro: Pyro_theme,
       hydro: Hydro_theme,

@@ -4,7 +4,8 @@
         icon
         @click="menuVisible = !menuVisible"
         :title="'当前主题：' + currentTheme"
-        rounded="sm"
+        rounded="lg"
+        class="theme-toggle-btn"
       >
         <img 
           :src="themeIcons[currentTheme]" 
@@ -15,20 +16,19 @@
 
     <transition name="slide-fade">
       <div v-if="menuVisible" class="theme-menu">
-        <v-btn
+        <button
           v-for="themeName in themes"
           :key="themeName"
-          icon
           @click="setTheme(themeName)"
           class="theme-item"
-          rounded="sm"
+          :data-theme="themeName"
         >
           <img 
             :src="themeIcons[themeName]" 
             :class="[themeName === currentTheme ? 'active-icon' : 'theme-icon']"
             alt="theme icon"
           />
-        </v-btn>
+        </button>
       </div>
     </transition>
   </div>
@@ -53,10 +53,20 @@ const themeIcons = {
   dendro: 'http://116.198.207.202:40061/i/2025/05/01/2m90rg.png'
 }
 
-const setTheme = (themeName) => {
-  currentTheme.value = themeName
-  theme.global.name.value = themeName
-  menuVisible.value = false
+const setTheme = (/** @type {string} */ themeName) => {
+  const clickedBtn = document.querySelector(`.theme-item[data-theme="${themeName}"]`)
+  if (clickedBtn) {
+    clickedBtn.classList.add('animate-selection')
+    setTimeout(() => {
+      clickedBtn.classList.remove('animate-selection')
+    }, 1000)
+  }
+  // 延迟1秒再关闭菜单，确保动画完成
+  setTimeout(() => {
+    menuVisible.value = false
+    currentTheme.value = themeName
+    theme.global.name.value = themeName
+  }, 800)
 }
 </script>
 
@@ -78,31 +88,36 @@ const setTheme = (themeName) => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.theme-toggle-btn {
+  background: rgba(var(--v-theme-background), 1);
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 .theme-menu .v-btn {
-  border: none !important;
-  box-shadow: none !important;
-  background: rgba(var(--v-theme-primary), 0.1) !important;
-  min-width: 0 !important;
-  padding: 0 !important;
-  margin: 0 1px !important;
+  border: none;
+  box-shadow: none;
+  min-width: 0;
+  padding: 0;
+  margin: 0 1px;
 }
 
-.theme-menu .v-btn:hover {
-  background: rgba(var(--v-theme-primary), 0.2) !important;
-}
-
-.theme-menu .active-icon {
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
+.active-icon {
+  scale: 1.1;
 }
 
 .theme-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
   transition: all 0.2s;
 }
 
 .theme-icon {
   width: 24px;
   height: 24px;
-  opacity: 0.7;
   transition: all 0.2s;
 }
 
@@ -129,5 +144,39 @@ const setTheme = (themeName) => {
 .slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-50%) translateX(-80px);
+}
+
+.animate-selection {
+  animation: floatUp 1s ease-out forwards;
+  z-index: 10;
+}
+
+.animate-selection img {
+  animation: scaleUp 1s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(-40px);
+    opacity: 0;
+  }
+}
+
+@keyframes scaleUp {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1.8);
+  }
 }
 </style>
