@@ -25,14 +25,9 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: rgb(var(--v-theme-surface));
+  background: rgb(var(--v-theme-secondary));
   margin-bottom: 1rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.v-theme--light .navbar {
-  background: rgb(var(--v-theme-surface-lighten-1));
-  border-bottom: 1px solid rgb(var(--v-theme-border));
 }
 
 .nav-links {

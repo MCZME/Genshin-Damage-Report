@@ -40,7 +40,8 @@ import { ref } from 'vue'
 
 const theme = useTheme()
 const themes = ['pyro', 'hydro', 'electro', 'cryo', 'anemo', 'geo', 'dendro']
-const currentTheme = ref(theme.global.name.value)
+const currentTheme = ref(sessionStorage.getItem('selectedTheme') || theme.global.name.value)
+theme.global.name.value = currentTheme.value
 const menuVisible = ref(false)
 
 const themeIcons = {
@@ -59,14 +60,15 @@ const setTheme = (/** @type {string} */ themeName) => {
     clickedBtn.classList.add('animate-selection')
     setTimeout(() => {
       clickedBtn.classList.remove('animate-selection')
-    }, 1000)
+    }, 600)
   }
-  // 延迟1秒再关闭菜单，确保动画完成
+  // 延迟再关闭菜单，确保动画完成
   setTimeout(() => {
     menuVisible.value = false
     currentTheme.value = themeName
     theme.global.name.value = themeName
-  }, 800)
+    sessionStorage.setItem('selectedTheme', themeName)
+  }, 600)
 }
 </script>
 
@@ -82,14 +84,14 @@ const setTheme = (/** @type {string} */ themeName) => {
   top: 50%;
   transform: translateY(-50%) translateX(-100%);
   display: flex;
-  background: rgba(var(--v-theme-background), 0.9);
+  background: rgba(var(--v-theme-primary), 0.9);
   border-radius: 4px;
   padding: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .theme-toggle-btn {
-  background: rgba(var(--v-theme-background), 1);
+  background: rgba(var(--v-theme-primary), 1);
   padding: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -147,12 +149,12 @@ const setTheme = (/** @type {string} */ themeName) => {
 }
 
 .animate-selection {
-  animation: floatUp 1s ease-out forwards;
+  animation: floatUp 0.6s ease-out forwards;
   z-index: 10;
 }
 
 .animate-selection img {
-  animation: scaleUp 1s ease-out forwards;
+  animation: scaleUp 0.6s ease-out forwards;
 }
 
 @keyframes floatUp {
