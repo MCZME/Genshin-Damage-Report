@@ -80,17 +80,21 @@ const setTheme = (/** @type {string} */ themeName) => {
 
 .theme-menu {
   position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%) translateX(-100%);
+  height: auto;
+  width: 110%;
+  top: 100%;
+  transform: translateY(1%) translateX(-5%);
   display: flex;
+  flex-direction: column;
   background: rgba(var(--v-theme-primary), 0.9);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .theme-toggle-btn {
+  width: 100%;
+  height: 100%;
   background: rgba(var(--v-theme-primary), 1);
   padding: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -112,20 +116,21 @@ const setTheme = (/** @type {string} */ themeName) => {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1/1;
   transition: all 0.2s;
 }
 
 .theme-icon {
-  width: 24px;
-  height: 24px;
+  width: 60%;
+  height: 60%;
   transition: all 0.2s;
 }
 
 .active-icon {
-  width: 28px;
-  height: 28px;
+  width: 70%;
+  height: 70%;
   opacity: 1;
 }
 
@@ -145,7 +150,7 @@ const setTheme = (/** @type {string} */ themeName) => {
 .slide-fade-enter-from,
 .slide-fade-leave-to {
   opacity: 0;
-  transform: translateY(-50%) translateX(-80px);
+  transform: translateY(-50%) translateX(-5%);
 }
 
 .animate-selection {

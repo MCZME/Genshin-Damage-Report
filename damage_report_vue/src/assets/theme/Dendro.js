@@ -1,17 +1,17 @@
 export default {
   dark: false,
   colors: {
-    primary: '#2E7D32', // 草元素深绿色
-    secondary: '#43A047', // 次草绿
-    accent: '#76FF03', // 高亮荧光绿
-    background: '#E8F5E9', // 浅绿背景
-    surface: '#FFFFFF',
+    primary: '#60773e', 
+    secondary: '#90aa7a', 
+    accent: '#806d4a', 
+    background: '#F5F5EE', 
+    surface: '#F5F5EE',
     error: '#FF5252',
     warning: '#FFC107',
     success: '#4CAF50',
     info: '#2196F3',
     text: '#1B5E20',
-    border: '#81C784' // 草绿色边框
+    border: '#81C784'
   },
   variables: {
     'gradient-dendro': 'linear-gradient(45deg, #2E7D32 0%, #76FF03 100%)',
