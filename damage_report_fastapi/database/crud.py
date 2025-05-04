@@ -11,55 +11,6 @@ class CRUD:
             yield conn
 
     @staticmethod
-    async def create_damage_report(report_data: Dict[str, Any]):
-        """创建损害报告（MySQL）"""
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "INSERT INTO damage_reports (title, description) VALUES (%s, %s)",
-                    (report_data['title'], report_data['description'])
-                )
-                await conn.commit()
-                return cursor.lastrowid
-
-    @staticmethod
-    async def get_damage_report(report_id: int):
-        """获取损害报告（MySQL）"""
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT * FROM damage_reports WHERE id = %s",
-                    (report_id,)
-                )
-                return await cursor.fetchone()
-    @staticmethod
-    async def insert_one(collection: str, document: Dict[str, Any]):
-        """插入单个文档"""
-        return await db.db[collection].insert_one(document)
-
-    @staticmethod
-    async def find_one(collection: str, query: Dict[str, Any]):
-        """查询单个文档"""
-        return await db.db[collection].find_one(query)
-
-    @staticmethod
-    async def update_one(collection: str, query: Dict[str, Any], update: Dict[str, Any]):
-        """更新单个文档"""
-        return await db.db[collection].update_one(query, {"$set": update})
-
-    @staticmethod
-    async def delete_one(collection: str, query: Dict[str, Any]):
-        """删除单个文档"""
-        return await db.db[collection].delete_one(query)
-
-    @staticmethod
-    async def find_many(collection: str, query: Optional[Dict[str, Any]] = None):
-        """查询多个文档"""
-        query = query or {}
-        cursor = db.db[collection].find(query)
-        return [doc async for doc in cursor]
-
-    @staticmethod
     async def get_avatar_path(character_name: str):
         """获取角色头像路径"""
         async with CRUD.get_mysql_conn() as conn:
@@ -91,6 +42,59 @@ class CRUD:
                 await cursor.execute(
                     "SELECT file_path FROM artifact WHERE name = %s",
                     (artifact_name,)
+                )
+                result = await cursor.fetchone()
+                return result[0] if result else None
+
+    @staticmethod
+    async def get_random_uids(count: int = 4) -> list[str]:
+        """从MongoDB的analytics集合获取随机uid列表"""
+        try:
+            if db.db is None:
+                raise ValueError("MongoDB数据库未连接")
+                
+            pipeline = [
+                {"$sample": {"size": count}},
+                {"$project": {"_id": 0, "uid": 1}}
+            ]
+            cursor = db.db.analytics.aggregate(pipeline)
+            return [doc["uid"] async for doc in cursor]
+        except Exception as e:
+            print(f"获取随机uid失败: {e}")
+            return []
+
+    @staticmethod
+    async def get_card_analytics(uid: str) -> dict:
+        """从analytics集合获取卡片基础数据"""
+        if db.db is None:
+            raise ValueError("MongoDB数据库未连接")
+            
+        doc = await db.db.analytics.find_one(
+            {"uid": uid}, 
+            {"_id":0, "name":1, "created_at":1, "dps":1, "simulation_duration":1}
+        )
+        return doc or {}
+
+    @staticmethod
+    async def get_card_config(uid: str) -> dict:
+        """从configs集合获取队伍配置"""
+        if db.db is None:
+            raise ValueError("MongoDB数据库未连接")
+            
+        doc = await db.db.configs.find_one(
+            {"uid": uid}, 
+            {"_id":0, "team_data":1}
+        )
+        return doc.get("team_data", {}) if doc else {}
+
+    @staticmethod
+    async def get_element_by_name(name: str):
+        """通过角色名获取角色元素"""
+        async with CRUD.get_mysql_conn() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    "SELECT Element FROM `character` WHERE name = %s",
+                    (name,)
                 )
                 result = await cursor.fetchone()
                 return result[0] if result else None
