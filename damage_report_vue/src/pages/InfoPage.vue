@@ -14,7 +14,7 @@
             <div class="header-content">
               <h3 class="header-title">队伍列表</h3>
               <div class="header-actions">
-                <button class="header-btn">
+                <button class="header-btn" @click="fetchRandomUids">
                   <v-icon icon="mdi-refresh"></v-icon>
                 </button>
                 <button class="header-btn">
@@ -27,15 +27,40 @@
               </div>
             </div>
           </div>
-          <div class="card-container">
-            <v-row>
-              <v-col v-for="(team, index) in teams"
-                  :key="index"
-                  cols="12"
-                  sm="6"
-                  md="6">
-                <TeamInfoCard :team="team" />
-              </v-col>
+            <div class="card-container">
+              <v-row>
+                <template v-if="loading">
+                  <v-col 
+                    v-for="n in 4"
+                    :key="`skeleton-${n}`"
+                    cols="12"
+                    sm="6"
+                    md="6">
+                    <div class="skeleton-card">
+                      <div class="skeleton-header">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-chips">
+                          <div class="skeleton-chip"></div>
+                          <div class="skeleton-chip"></div>
+                          <div class="skeleton-chip"></div>
+                        </div>
+                      </div>
+                      <div class="skeleton-divider"></div>
+                      <div class="skeleton-content">
+                        <div class="skeleton-avatar" v-for="i in 4" :key="i"></div>
+                      </div>
+                    </div>
+                  </v-col>
+                </template>
+              <template v-else>
+                <v-col v-for="(uid, index) in uids"
+                    :key="index"
+                    cols="12"
+                    sm="6"
+                    md="6">
+                  <TeamInfoCard :uid="uid" />
+                </v-col>
+              </template>
             </v-row>
           </div>
         </div>
@@ -47,6 +72,8 @@
 <script>
 import NavBar from '@/components/NavBar.vue'
 import TeamInfoCard from '@/components/TeamInfoCard.vue'
+import axios from 'axios'
+import config from '@/config'
 
 export default {
   name: 'InfoPage',
@@ -56,57 +83,32 @@ export default {
   },
   data() {
     return {
-      teams: [
-        {
-          name: '雷神国家队',
-          members: [
-            {
-              name: '雷电将军',
-              avatar: 'https://example.com/raiden.png',
-              level: 90,
-              element: '雷',
-              constellation: 2,
-              talentLevels: [9, 9, 10],
-              weapon: '薙草之稻光',
-              artifacts: ['绝缘之旗印4件']
-            },
-            {
-              name: '行秋',
-              avatar: 'https://example.com/xingqiu.png',
-              level: 80,
-              element: '水',
-              constellation: 6,
-              talentLevels: [1, 9, 9],
-              weapon: '祭礼剑',
-              artifacts: ['沉沦之心2件', '宗室2件']
-            },
-            {
-              name: '香菱',
-              avatar: 'https://example.com/xiangling.png',
-              level: 80,
-              element: '火',
-              constellation: 4,
-              talentLevels: [1, 8, 8],
-              weapon: '「渔获」',
-              artifacts: ['绝缘之旗印']
-            },
-            {
-              name: '班尼特',
-              avatar: 'https://example.com/bennett.png',
-              level: 80,
-              element: '火',
-              constellation: 1,
-              talentLevels: [1, 8, 8],
-              weapon: '天空之刃',
-              artifacts: ['宗室4件']
-            }
-          ],
-          description: '经典雷神国家队配置，通过元素反应打出高额伤害',
-          dps: 45000,
-          simulationTime: 90,
-          createdAt: Date.now()
-        }
-      ]
+      uids: [],
+      loading: false,
+      error: null
+    }
+  },
+  async created() {
+    await this.fetchRandomUids();
+  },
+  methods: {
+    async fetchRandomUids() {
+      // 强制清空当前数据以显示加载状态
+      this.uids = [];
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // 添加时间戳参数避免缓存
+        const timestamp = new Date().getTime();
+        const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.card_uid}/random?t=${timestamp}`);
+        this.uids = response.data.data.uids;
+      } catch (err) {
+        this.error = err.response?.data?.message || '获取UID列表失败';
+        console.error('获取UID列表失败:', err);
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }
@@ -200,5 +202,87 @@ export default {
   /* background: rgba(var(--v-theme-surface), 0.5); */
   border-radius: 8px;
   height: 100%;
+}
+
+.skeleton-card {
+  background: rgba(var(--v-theme-surface), 1);
+  border-radius: 12px;
+  margin: 12px;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.3), 
+              0 1px 3px 1px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+.skeleton-header {
+  padding: 16px 16px 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.skeleton-title {
+  height: 28px;
+  width: 120px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-chips {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-chip {
+  height: 24px;
+  width: 60px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 12px;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-divider {
+  height: 1px;
+  background-color: rgba(var(--v-theme-on-surface), 0.1);
+  margin: 0 16px;
+}
+
+.skeleton-content {
+  padding: 6px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+}
+
+.skeleton-avatar {
+  width: 100px;
+  height: 100px;
+  background: rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 4px;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-avatar,
+.skeleton-title,
+.skeleton-chip,
+.skeleton-talents,
+.skeleton-weapon,
+.skeleton-artifact {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--v-theme-on-surface), 0.1) 25%,
+    rgba(var(--v-theme-on-surface), 0.15) 50%,
+    rgba(var(--v-theme-on-surface), 0.1) 75%
+  );
+  background-size: 200% 100%;
 }
 </style>

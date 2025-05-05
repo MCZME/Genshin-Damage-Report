@@ -10,8 +10,10 @@ export default {
       avatar: '/api/avatar',
       weapon: '/api/weapon',
       artifact: '/api/artifact',
+      card_uid: '/api/card-data',
+      character: '/api/character',
     },
-    timeout: 10000 // 请求超时时间(毫秒)
+    timeout: 10000 // 请求超时时间(毫秒)s
   },
 
   // 应用设置
