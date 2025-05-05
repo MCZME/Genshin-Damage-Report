@@ -1,7 +1,9 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
-import asyncmy
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from contextlib import asynccontextmanager
+from .models import Base
 
 class Database:
     def __init__(self):
@@ -25,40 +27,33 @@ class Database:
 
 class MySQLDatabase:
     def __init__(self):
-        self.pool = None
+        self.engine = None
+        self.async_session = None
         
     async def connect(self, host: str, port: int, user: str,
                      password: str, database: str, pool_size: int = 10):
-        """创建异步MySQL连接池"""
-        self.pool = await asyncmy.create_pool(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            db=database,
-            minsize=1,
-            maxsize=pool_size,
-            autocommit=True
+        """创建SQLAlchemy异步引擎和会话工厂"""
+        db_url = f"mysql+asyncmy://{user}:{password}@{host}:{port}/{database}"
+        self.engine = create_async_engine(
+            db_url,
+            pool_size=pool_size,
+            echo=True
         )
+        self.async_session = sessionmaker(
+            self.engine, expire_on_commit=False, class_=AsyncSession
+        )
+        
+        # 创建所有表(如果不存在)
+        async with self.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
     @asynccontextmanager
-    async def get_connection(self):
-        """异步上下文管理器获取连接"""
-        if not self.pool:
-            raise Exception("MySQL连接池未初始化")
-        async with self.pool.acquire() as conn:
-            yield conn
-
-    # 保留同步连接作为fallback
-    def sync_connect(self, **kwargs):
-        """同步连接方式（兼容旧代码）"""
-        return asyncmy.connect(
-            host=kwargs['host'],
-            port=kwargs['port'],
-            user=kwargs['user'],
-            password=kwargs['password'],
-            database=kwargs['database']
-        )
+    async def get_session(self):
+        """异步上下文管理器获取会话"""
+        if not self.async_session:
+            raise Exception("SQLAlchemy会话工厂未初始化")
+        async with self.async_session() as session:
+            yield session
         
 # 全局数据库实例
 db = Database()

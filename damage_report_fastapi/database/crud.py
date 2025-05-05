@@ -1,50 +1,49 @@
 from .connection import db, mysql_db
+from .models import Avatar, Weapon, Artifact, Character
 from typing import Optional, Dict, Any
 from contextlib import asynccontextmanager
+from sqlalchemy import select
 
 class CRUD:
     @staticmethod
     @asynccontextmanager
-    async def get_mysql_conn():
-        """获取MySQL异步连接"""
-        async with mysql_db.get_connection() as conn:
-            yield conn
+    async def get_session():
+        """获取SQLAlchemy异步会话"""
+        async with mysql_db.get_session() as session:
+            yield session
 
     @staticmethod
     async def get_avatar_path(character_name: str):
         """获取角色头像路径"""
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT file_path FROM avatar WHERE name = %s",
-                    (character_name,)
-                )
-                result = await cursor.fetchone()
-                return result[0] if result else None
+        async with CRUD.get_session() as session:
+            result = await session.execute(
+                select(Avatar.file_path)
+                .where(Avatar.name == character_name)
+            )
+            avatar = result.scalar_one_or_none()
+            return avatar
 
     @staticmethod
     async def get_weapon_path(weapon_name: str):
         """获取武器图片路径"""
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT file_path FROM weapon WHERE name = %s",
-                    (weapon_name,)
-                )
-                result = await cursor.fetchone()
-                return result[0] if result else None
+        async with CRUD.get_session() as session:
+            result = await session.execute(
+                select(Weapon.file_path)
+                .where(Weapon.name == weapon_name)
+            )
+            weapon = result.scalar_one_or_none()
+            return weapon
 
     @staticmethod
     async def get_artifact_path(artifact_name: str):
         """获取圣遗物图片路径"""
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT file_path FROM artifact WHERE name = %s",
-                    (artifact_name,)
-                )
-                result = await cursor.fetchone()
-                return result[0] if result else None
+        async with CRUD.get_session() as session:
+            result = await session.execute(
+                select(Artifact.file_path)
+                .where(Artifact.name == artifact_name)
+            )
+            artifact = result.scalar_one_or_none()
+            return artifact
 
     @staticmethod
     async def get_random_uids(count: int = 4) -> list[str]:
@@ -90,11 +89,10 @@ class CRUD:
     @staticmethod
     async def get_element_by_name(name: str):
         """通过角色名获取角色元素"""
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute(
-                    "SELECT Element FROM `character` WHERE name = %s",
-                    (name,)
-                )
-                result = await cursor.fetchone()
-                return result[0] if result else None
+        async with CRUD.get_session() as session:
+            result = await session.execute(
+                select(Character.element)
+                .where(Character.name == name)
+            )
+            element = result.scalar_one_or_none()
+            return element
