@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Query
 from fastapi.responses import JSONResponse
-from typing import Dict, Any
+from typing import Dict, Any, List
 from database.crud import CRUD
 
 router = APIRouter(
@@ -57,45 +57,48 @@ router = APIRouter(
         }
     }
 )
-async def get_character_element(name: str):
+async def get_character_element(teamMember: List[str] = Query(...)):
     """
-    获取指定角色元素类型
+    批量获取角色元素类型
     
     参数:
-        name: 角色名称
+        teamMember: 角色名称列表
         
     返回:
         dict: 统一响应格式 {
             "code": 状态码,
             "message": "响应消息",
-            "data": {
-                "element": 元素类型,
-                "name": 角色名称
-            }
+            "data": [
+                {
+                    "element": 元素类型,
+                    "name": 角色名称
+                },
+                ...
+            ]
         }
     """
     try:
-        if not isinstance(name, str) or not name:
+        if not isinstance(teamMember, list) or not teamMember:
             raise HTTPException(
                 status_code=422,
-                detail="角色名称必须为非空字符串"
+                detail="请求参数错误: teamMember 应为非空列表"
             )
             
-        element = await CRUD.get_element_by_name(name)
+        elements = await CRUD.get_elements_by_names(teamMember)
         
-        if not element:
+        if not elements:
             raise HTTPException(
                 status_code=404,
-                detail="未找到该角色相关数据"
+                detail="未找到相关角色数据"
             )
             
         return {
             "code": 200,
             "message": "成功",
-            "data": {
-                "element": element,
-                "name": name
-            }
+            "data": [
+                {"name": name, "element": element}
+                for name, element in elements.items()
+            ]
         }
     except HTTPException:
         raise

@@ -87,12 +87,12 @@ class CRUD:
         return doc.get("team_data", {}) if doc else {}
 
     @staticmethod
-    async def get_element_by_name(name: str):
-        """通过角色名获取角色元素"""
+    async def get_elements_by_names(names: list[str]) -> dict:
+        """批量获取角色元素类型"""
         async with CRUD.get_session() as session:
             result = await session.execute(
-                select(Character.element)
-                .where(Character.name == name)
+                select(Character.name, Character.element)
+                .where(Character.name.in_(names))
             )
-            element = result.scalar_one_or_none()
-            return element
+            elements = {row[0]: row[1] for row in result.all()}
+            return elements

@@ -37,7 +37,7 @@ class MySQLDatabase:
         self.engine = create_async_engine(
             db_url,
             pool_size=pool_size,
-            echo=True
+            echo=False
         )
         self.async_session = sessionmaker(
             self.engine, expire_on_commit=False, class_=AsyncSession

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from typing import Optional
+from utils.limiter import limiter
 from database.crud import CRUD
 
 router = APIRouter(
@@ -9,7 +10,8 @@ router = APIRouter(
 )
 
 @router.get("/avatar")
-async def get_avatar_path(name: str):
+@limiter.limit("200/minute")
+async def get_avatar_path(name: str, request: Request):
     """获取角色头像路径"""
     try:
         path = await CRUD.get_avatar_path(name)
@@ -37,7 +39,8 @@ async def get_avatar_path(name: str):
         )
 
 @router.get("/weapon")
-async def get_weapon_resource(name: str):
+@limiter.limit("200/minute")
+async def get_weapon_resource(name: str, request: Request):
     """获取武器资源路径"""
     try:
         path = await CRUD.get_weapon_path(name)
@@ -65,7 +68,8 @@ async def get_weapon_resource(name: str):
         )
 
 @router.get("/artifact")
-async def get_artifact_resource(name: str):
+@limiter.limit("200/minute")
+async def get_artifact_resource(name: str, request: Request):
     """获取圣遗物资源路径"""
     try:
         path = await CRUD.get_artifact_path(name)
