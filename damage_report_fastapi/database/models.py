@@ -30,3 +30,10 @@ class Character(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True)
     element = Column(String(20))
+
+class Sticker(Base):
+    __tablename__ = 'sticker'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100))
+    file_name = Column(String(255))

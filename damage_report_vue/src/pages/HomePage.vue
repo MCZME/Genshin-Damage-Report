@@ -127,7 +127,7 @@ const generateMemes = async () => {
         position,
         rotation: Math.random() * 60 - 15,
         scale: 0.8 + Math.random() * 0.4,
-        image: sticker[1] ? `http://116.198.207.202:40061${sticker[1]}` : null
+        image: sticker.file_name ? `http://116.198.207.202:40061${sticker.file_name}` : null
       }]
     }
   } catch (error) {
@@ -192,7 +192,7 @@ const handleWallClick = (e) => {
       },
       rotation: Math.random() * 30 - 15,
       scale: 0.8 + Math.random() * 0.4,
-      image: `http://116.198.207.202:40061${randomSticker[1]}`
+      image: `http://116.198.207.202:40061${randomSticker.file_name}`
     }
     memes.value = [...memes.value, newMeme]
   }

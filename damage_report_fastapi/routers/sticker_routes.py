@@ -1,6 +1,5 @@
-import time
-from fastapi import APIRouter, HTTPException
-from database.connection import mysql_db
+from fastapi import APIRouter, HTTPException, Query
+from database.crud import CRUD
 from typing import Optional
 
 router = APIRouter(prefix="/api", tags=["Sticker"])
@@ -11,37 +10,12 @@ async def get_random_stickers(count: Optional[int] = 25):
     - count: 返回的表情包数量，默认为25
     """
     try:
-        from database.crud import CRUD
-        async with CRUD.get_mysql_conn() as conn:
-            async with conn.cursor() as cursor:
-                # 获取贴纸总数
-                await cursor.execute("SELECT COUNT(*) FROM sticker")
-                total = (await cursor.fetchone())[0]
-                
-                if total == 0:
-                    return {
-                        "code": 200,
-                        "message": "success",
-                        "data": {
-                            "stickers": []
-                        }
-                    }
-                
-                # 生成不重复的随机ID列表
-                import random
-                random_ids = random.sample(range(1, total + 1), min(count, total))
-                
-                await cursor.execute(
-                    "SELECT name, file_name FROM sticker WHERE id IN %s",
-                    (tuple(random_ids),)
-                )
-                result = await cursor.fetchall()
-        
+        stickers = await CRUD.get_random_stickers(count)
         return {
             "code": 200,
             "message": "success",
             "data": {
-                "stickers": result
+                "stickers": stickers
             }
         }
     except Exception as e:
