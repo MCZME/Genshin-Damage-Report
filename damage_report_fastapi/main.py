@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware import Middleware
+from utils.limiter import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from database.connection import db, mysql_db
 from config import settings
 from auth.routes import router as auth_router
@@ -26,16 +29,31 @@ async def lifespan(app: FastAPI):
     yield
     # 关闭时断开数据库连接
     await db.close()
-    if mysql_db.pool:
-        mysql_db.pool.close()
-        await mysql_db.pool.wait_closed()
+    if mysql_db.engine:
+        await mysql_db.engine.dispose()
+
 
 app = FastAPI(
     title=settings["app"]["name"],
     debug=settings["app"]["debug"],
     lifespan=lifespan,
-    route_class=LoggingRoute
+    route_class=LoggingRoute,
+    middleware=[
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    ],
+    exception_handlers={
+        RateLimitExceeded: rate_limit_exceeded_handler
+    }
 )
+
+# 应用限流中间件
+app.state.limiter = limiter
 
 # 添加安全中间件 (最先执行)
 app.add_middleware(SecurityMiddleware)

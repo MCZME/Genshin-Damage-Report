@@ -31,7 +31,7 @@ class MySQLDatabase:
         self.async_session = None
         
     async def connect(self, host: str, port: int, user: str,
-                     password: str, database: str, pool_size: int = 10):
+                     password: str, database: str, pool_size: int = 20):
         """创建SQLAlchemy异步引擎和会话工厂"""
         db_url = f"mysql+asyncmy://{user}:{password}@{host}:{port}/{database}"
         self.engine = create_async_engine(

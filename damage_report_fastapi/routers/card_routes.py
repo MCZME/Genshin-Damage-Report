@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.responses import JSONResponse
 from typing import List, Dict, Any
 from database.crud import CRUD
+from utils.limiter import limiter
 
 router = APIRouter(
     prefix="/api",
@@ -56,7 +57,8 @@ router = APIRouter(
         }
     }
 )
-async def get_card_data():
+@limiter.limit("10/minute")
+async def get_card_data(request: Request):
     """
     获取随机UID卡片数据
     
