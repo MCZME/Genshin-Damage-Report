@@ -11,6 +11,7 @@ from routers.sticker_routes import router as sticker_router
 from routers.game_resource_routes import router as resource_router
 from routers.card_routes import router as card_router
 from routers.character_routes import router as character_router
+from routers.sim_data_routes import router as sim_data_router
 from services.logging_monitoring import MonitoringMiddleware, LoggingRoute
 from services.security import SecurityMiddleware
 
@@ -73,3 +74,4 @@ app.include_router(sticker_router)
 app.include_router(resource_router)
 app.include_router(card_router)
 app.include_router(character_router)
+app.include_router(sim_data_router)

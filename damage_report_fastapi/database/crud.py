@@ -47,48 +47,6 @@ class CRUD:
             return artifact
 
     @staticmethod
-    async def get_random_uids(count: int = 4) -> list[str]:
-        """从MongoDB的analytics集合获取随机uid列表"""
-        try:
-            if db.db is None:
-                raise ValueError("MongoDB数据库未连接")
-                
-            pipeline = [
-                {"$sample": {"size": count}},
-                {"$project": {"_id": 0, "uid": 1}}
-            ]
-            cursor = db.db.analytics.aggregate(pipeline)
-            return [doc["uid"] async for doc in cursor]
-        except Exception as e:
-            print(f"获取随机uid失败: {e}")
-            return []
-
-    @staticmethod
-    async def get_card_analytics(uid: str) -> dict:
-        """从analytics集合获取卡片基础数据"""
-        if db.db is None:
-            raise ValueError("MongoDB数据库未连接")
-            
-        doc = await db.db.analytics.find_one(
-            {"uid": uid}, 
-            {"_id":0, "name":1, "created_at":1, "dps":1, "simulation_duration":1}
-        )
-        return doc or {}
-
-    @staticmethod
-    async def get_card_config(uid: str) -> dict:
-        """从configs集合获取队伍配置"""
-        if db.db is None:
-            raise ValueError("MongoDB数据库未连接")
-            
-        doc = await db.db.configs.find_one(
-            {"uid": uid}, 
-            {"_id":0, "team_data":1}
-        )
-        return doc.get("team_data", {}) if doc else {}
-
-
-    @staticmethod
     async def get_random_stickers(count: int = 25) -> list[dict]:
         """获取随机表情包"""
         async with CRUD.get_session() as session:
@@ -124,3 +82,55 @@ class CRUD:
             elements = {row[0]: row[1] for row in result.all()}
             return elements
 
+    @staticmethod
+    async def get_random_uids(count: int = 4) -> list[str]:
+        """从MongoDB的analytics集合获取随机uid列表"""
+        try:
+            if db.db is None:
+                raise ValueError("MongoDB数据库未连接")
+                
+            pipeline = [
+                {"$sample": {"size": count}},
+                {"$project": {"_id": 0, "uid": 1}}
+            ]
+            cursor = db.db.analytics.aggregate(pipeline)
+            return [doc["uid"] async for doc in cursor]
+        except Exception as e:
+            print(f"获取随机uid失败: {e}")
+            return []
+
+    @staticmethod
+    async def get_card_analytics(uid: str) -> dict:
+        """从analytics集合获取卡片基础数据"""
+        if db.db is None:
+            raise ValueError("MongoDB数据库未连接")
+            
+        doc = await db.db.analytics.find_one(
+            {"uid": uid}, 
+            {"_id":0, "name":1, "created_at":1, "dps":1, "simulation_duration":1}
+        )
+        return doc or {}
+
+    @staticmethod
+    async def get_team_config(uid: str) -> dict:
+        """从configs集合获取队伍配置"""
+        if db.db is None:
+            raise ValueError("MongoDB数据库未连接")
+            
+        doc = await db.db.configs.find_one(
+            {"uid": uid}, 
+            {"_id":0, "team_data":1, "action_sequence":1, "target_data":1}
+        )
+        return doc if doc else {}
+    
+    @staticmethod
+    async def get_sim_result(uid: str) -> dict:
+        """通过UID获取模拟结果分析数据"""
+        if db.db is None:
+            raise ValueError("MongoDB数据库未连接")
+            
+        doc = await db.db.analytics.find_one(
+            {"uid": uid}, 
+            {"_id":0, "name":1, "created_at":1, "dps":1, "simulation_duration":1, "frames":1}
+        )
+        return doc or {}

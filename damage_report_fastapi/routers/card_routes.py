@@ -159,7 +159,7 @@ async def get_card_data_by_uid(uid: str):
             )
             
         analytics_data = await CRUD.get_card_analytics(uid)
-        team_data = await CRUD.get_card_config(uid)
+        team_data = await CRUD.get_team_config(uid)
         
         if not analytics_data and not team_data:
             raise HTTPException(
@@ -172,7 +172,7 @@ async def get_card_data_by_uid(uid: str):
             "message": "成功",
             "data": {
                 **analytics_data,
-                "team_data": team_data
+                "team_data": team_data.get("team_data", {}),
             }
         }
     except HTTPException:
