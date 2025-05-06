@@ -12,6 +12,7 @@ export default {
       artifact: '/api/artifact',
       card_uid: '/api/card-data',
       character: '/api/character',
+      sim: '/api/sim-data',
     },
     timeout: 10000 // 请求超时时间(毫秒)s
   },

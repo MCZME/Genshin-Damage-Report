@@ -15,47 +15,21 @@
       <!-- 成员信息 -->
       <div class="member-grid">
         <div class="member-card" v-for="(member, index) in team.members" :key="index">
-          <div class="avatar-container">
-            <!-- 背景层 - 星空 -->
-            <v-img
-              cover
-              :src="'http://116.198.207.202:40061/i/2025/05/01/3e2suj.png'"
-              width="100%"
-              height="100%"
-              class="member-bg"
-              :style="{'filter': getElementFilter(member.element)}"
-            ></v-img>
-            
-            <!-- 中间层 - 元素图标 -->
-            <v-img
-              :src="getElementImage(member.element)"
-              width="100%"
-              height="100%"
-              class="member-element"
-            ></v-img>
-            
-            <!-- 上层 - 角色头像 -->
-            <v-img
-              :src="getCharacterImage(member.name)"
-              :alt="member.name"
-              width="100%"
-              height="100%"
-              class="member-avatar"
-            ></v-img>
-            
-            <!-- 等级 -->
-            <div class="level-badge">
-              Lv{{ member.level }}
-            </div>
-            
-            <!-- 命座 -->
-            <div class="constellation-badge">
-              {{ member.constellation }}
-            </div>
+          <CharacterAvatar
+            :name="member.name"
+            :element="member.element">
+          </CharacterAvatar>
+          <!-- 等级 -->
+          <div class="level-badge">
+            Lv{{ member.level }}
+          </div>
+          <!-- 命座 -->
+          <div class="constellation-badge">
+            {{ member.constellation }}
           </div>
           <!-- 天赋 -->
           <div class="talents-badge">
-              天赋:{{ member.talentLevels.join('/') }}
+            天赋:{{ member.talentLevels.join('/') }}
           </div>
           <!-- 武器和圣遗物 -->
           <div class="equipment-container">
@@ -117,15 +91,12 @@
 <script>
 import axios from 'axios'
 import config from '@/config'
+import CharacterAvatar from './CharacterAvatar.vue'
 
 export default {
   name: 'TeamInfoCard',
-  data() {
-    return {
-      avatarUrls: {},
-      weaponUrls: {},
-      artifactUrls: {}
-    }
+  components: {
+    CharacterAvatar
   },
   props: {
     uid: {
@@ -138,7 +109,6 @@ export default {
       team: null,
       loading: false,
       error: null,
-      avatarUrls: {},
       weaponUrls: {},
       artifactUrls: {},
       // 缓存元素类型
@@ -165,21 +135,6 @@ export default {
     },
     getArtifactImage(artifactName) {
       return this.artifactUrls[artifactName] || ``
-    },
-    getCharacterImage(characterName) {
-      return this.avatarUrls[characterName] || ''
-    },
-    getElementImage(element) {
-      const elementImages = {
-        '岩': 'http://116.198.207.202:40061/i/2025/05/01/2m926v.png',
-        '水': 'http://116.198.207.202:40061/i/2025/05/01/2m8zm2.png',
-        '雷': 'http://116.198.207.202:40061/i/2025/05/01/2m91og.png',
-        '草': 'http://116.198.207.202:40061/i/2025/05/01/2m90rg.png',
-        '风': 'http://116.198.207.202:40061/i/2025/05/01/2m9093.png',
-        '火': 'http://116.198.207.202:40061/i/2025/05/01/2m8zpq.png',
-        '冰': 'http://116.198.207.202:40061/i/2025/05/01/2m8yg4.png'
-      }
-      return elementImages[element] || ''
     },
     // 简单防抖函数
     debounce(func, delay) {
@@ -268,7 +223,6 @@ export default {
 
             // 4. 并行加载所有图片
             await Promise.all([
-              this.loadAvatars(),
               this.loadWeapons(),
               this.loadArtifacts()
             ]);
@@ -287,34 +241,6 @@ export default {
       if (artifacts.set1) count++;
       if (artifacts.set2 && artifacts.set1 !== artifacts.set2) count++;
       return count;
-    },
-    getElementFilter(element) {
-      const elementColors = {
-        '岩': 'sepia(100%) saturate(300%) hue-rotate(30deg)',
-        '水': 'sepia(100%) saturate(300%) hue-rotate(180deg)',
-        '雷': 'sepia(100%) saturate(300%) hue-rotate(270deg)',
-        '草': 'sepia(100%) saturate(300%) hue-rotate(90deg)',
-        '风': 'sepia(100%) saturate(300%) hue-rotate(150deg)',
-        '火': 'sepia(100%) saturate(400%) hue-rotate(-30deg)',
-        '冰': 'sepia(100%) saturate(300%) hue-rotate(210deg)'
-      }
-      return elementColors[element] || ''
-    },
-    async loadAvatars() {
-      await Promise.all(this.team.members.map(async member => {
-        // 如果已有缓存则跳过
-        if (this.avatarUrls[member.name]) return;
-        
-        try {
-          const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.avatar}`, {
-            params: { name: member.name }
-          });
-          this.avatarUrls[member.name] = `http://116.198.207.202:40061${response.data.file_path}` || '/assets/default-avatar.png';
-        } catch (error) {
-          console.error('获取头像失败:', error);
-          this.avatarUrls[member.name] = '/assets/default-avatar.png';
-        }
-      }));
     },
     async loadWeapons() {
       await Promise.all(this.team.members.map(async member => {
@@ -457,40 +383,6 @@ export default {
 
 .member-card {
   position: relative;
-}
-
-.avatar-container {
-  position: relative;
-  width: 100px;
-  height: 100px;
-}
-
-.member-bg,
-.member-element,
-.member-avatar {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.member-bg{
-  z-index: 1;
-  object-fit: fill;
-  width: 100%;
-  height: 100%;
-}
-
-.member-element {
-  z-index: 2;
-  opacity: 0.7;
-}
-
-.member-avatar {
-  z-index: 3;
-}
-
-.member-avatar {
-  border-radius: 4px;
 }
 
 .level-badge {
