@@ -38,7 +38,7 @@
               <div class="equipment-image-container">
                 <div class = 'equipment-img'>
                   <img
-                  :src="getWeaponImage(member.weapon.name)"
+                  :src="weaponImages[member.weapon.name]"
                   class="equipment-image"
                   >
                   <div class="refinement-badge" v-if="member.weapon.refinement">
@@ -56,7 +56,7 @@
               <template v-else-if="member.artifacts.set1 === member.artifacts.set2">
                 <div class="equipment-image-container">
                   <img
-                    :src="getArtifactImage(member.artifacts.set1)"
+                    :src="artifactImages[member.artifacts.set1]"
                     class="equipment-image"
                   >
                     <div class="set-effect-badge">
@@ -67,14 +67,14 @@
               <template v-else>
                 <div class="equipment-image-container">
                   <img
-                    :src="getArtifactImage(member.artifacts.set1)"
+                    :src="artifactImages[member.artifacts.set1]"
                     class="equipment-image"
                   >
                   <div class="set-effect-badge">{{ member.artifacts.set1Count }}</div>
                 </div>
                 <div class="equipment-image-container" v-if="member.artifacts.set2">
                   <img
-                    :src="getArtifactImage(member.artifacts.set2)"
+                    :src="artifactImages[member.artifacts.set2]"
                     class="equipment-image"
                   >
                   <div class="set-effect-badge">{{ member.artifacts.set2Count }}</div>
@@ -89,9 +89,8 @@
 </template>
 
 <script>
-import axios from 'axios'
-import config from '@/config'
 import CharacterAvatar from './CharacterAvatar.vue'
+import apiService from '@/api/api'
 
 export default {
   name: 'TeamInfoCard',
@@ -109,12 +108,11 @@ export default {
       team: null,
       loading: false,
       error: null,
-      weaponUrls: {},
-      artifactUrls: {},
-      // 缓存元素类型
-      elementCache: {},
       // 防抖计时器
-      debounceTimer: null
+      debounceTimer: null,
+      // 预加载的图片URL
+      weaponImages: {},
+      artifactImages: {}
     }
   },
   async created() {
@@ -129,12 +127,6 @@ export default {
   methods: {
     formatDate(timestamp) {
       return new Date(timestamp).toLocaleDateString()
-    },
-    getWeaponImage(weaponName) {
-      return this.weaponUrls[weaponName] || ``
-    },
-    getArtifactImage(artifactName) {
-      return this.artifactUrls[artifactName] || ``
     },
     // 简单防抖函数
     debounce(func, delay) {
@@ -151,8 +143,8 @@ export default {
           
           try {
             // 1. 获取原始队伍数据
-            const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.card_uid}/${this.uid}`);
-            const data = response.data.data;
+            const response = await apiService.getTeamData(this.uid);
+            const data = response.data;
             
             // 2. 处理成员数据
             const memberNames = data.team_data
@@ -160,11 +152,11 @@ export default {
               .map(member => member.character.name);
             
             // 批量获取元素类型
-            await this.getCharacterElement(memberNames);
+            const elements = await apiService.getCharacterElements(memberNames);
             
             const processedMembers = data.team_data
               .filter(member => !member.error)
-              .map((member, index) => {
+              .map((member) => {
                 const [talentAttack, talentSkill, talentBurst] = 
                   member.character.talents.split('/').map(Number);
                 
@@ -196,7 +188,7 @@ export default {
                 return {
                   name: member.character.name,
                   level: member.character.level,
-                  element: this.elementCache[member.character.name],
+                  element: elements[member.character.name],
                   constellation: member.character.constellation,
                   talentLevels: [talentAttack, talentSkill, talentBurst],
                   weapon: {
@@ -221,11 +213,22 @@ export default {
               members: processedMembers
             };
 
-            // 4. 并行加载所有图片
+            // 4. 预加载所有武器和圣遗物图片
             await Promise.all([
-              this.loadWeapons(),
-              this.loadArtifacts()
+              ...processedMembers.map(member => 
+                apiService.getWeaponImage(member.weapon.name)
+                  .then(url => this.weaponImages[member.weapon.name] = url)
+              ),
+              ...processedMembers.flatMap(member => [
+                member.artifacts.set1 && 
+                  apiService.getArtifactImage(member.artifacts.set1)
+                    .then(url => this.artifactImages[member.artifacts.set1] = url),
+                member.artifacts.set2 && member.artifacts.set1 !== member.artifacts.set2 &&
+                  apiService.getArtifactImage(member.artifacts.set2)
+                    .then(url => this.artifactImages[member.artifacts.set2] = url)
+              ].filter(Boolean))
             ]);
+
           } catch (err) {
             this.error = err.response?.data?.message || '获取队伍数据失败';
             console.error('获取队伍数据失败:', err);
@@ -241,98 +244,13 @@ export default {
       if (artifacts.set1) count++;
       if (artifacts.set2 && artifacts.set1 !== artifacts.set2) count++;
       return count;
-    },
-    async loadWeapons() {
-      await Promise.all(this.team.members.map(async member => {
-        // 如果已有缓存则跳过
-        if (this.weaponUrls[member.weapon.name]) return;
-        
-        try {
-          const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.weapon}`, {
-            params: { name: member.weapon.name }
-          });
-          this.weaponUrls[member.weapon.name] = response.data.file_path || '/assets/default-weapon.png';
-        } catch (error) {
-          console.error('获取武器图片失败:', error);
-          this.weaponUrls[member.weapon.name] = '/assets/default-weapon.png';
-        }
-      }));
-    },
-    async getCharacterElement(teamMember) {
-      // 检查缓存是否已包含所有需要的元素
-      const uncachedMembers = teamMember.filter(name => !this.elementCache[name]);
-      
-      if (uncachedMembers.length === 0) {
-        return teamMember.map(name => this.elementCache[name]);
-      }
-      
-      try {
-        const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.character}/element`, {
-          params: { 
-            teamMember: uncachedMembers 
-          },
-          paramsSerializer: params => {
-            return Object.entries(params)
-              .flatMap(([key, values]) => 
-                Array.isArray(values) 
-                  ? values.map(v => `${key}=${encodeURIComponent(v)}`)
-                  : `${key}=${encodeURIComponent(values)}`
-              )
-              .join('&');
-          }
-        });
-        
-        // 更新缓存
-        response.data.data.forEach(item => {
-          this.elementCache[item.name] = item.element;
-        });
-      
-      } catch (error) {
-        console.error('获取角色元素类型失败:', error);
-      }
-    },
-    async loadArtifacts() {
-      const artifactRequests = [];
-      
-      this.team.members.forEach(member => {
-        if (member.artifacts.set1 && !this.artifactUrls[member.artifacts.set1]) {
-          artifactRequests.push(
-            axios.get(`${config.api.baseUrl}${config.api.endpoints.artifact}`, {
-              params: { name: member.artifacts.set1 }
-            })
-            .then(response => {
-              this.artifactUrls[member.artifacts.set1] = response.data.file_path || '/assets/default-artifact.png';
-            })
-            .catch(error => {
-              console.error('获取圣遗物图片失败:', error);
-              this.artifactUrls[member.artifacts.set1] = '/assets/default-artifact.png';
-            })
-          );
-        }
-        
-        if (member.artifacts.set2 && !this.artifactUrls[member.artifacts.set2]) {
-          artifactRequests.push(
-            axios.get(`${config.api.baseUrl}${config.api.endpoints.artifact}`, {
-              params: { name: member.artifacts.set2 }
-            })
-            .then(response => {
-              this.artifactUrls[member.artifacts.set2] = response.data.file_path || '/assets/default-artifact.png';
-            })
-            .catch(error => {
-              console.error('获取圣遗物图片失败:', error);
-              this.artifactUrls[member.artifacts.set2] = '/assets/default-artifact.png';
-            })
-          );
-        }
-      });
-      
-      await Promise.all(artifactRequests);
     }
   }
 }
 </script>
 
 <style scoped>
+/* 保留原有样式不变 */
 .team-card {
   margin: 12px;
   max-width: 500px;

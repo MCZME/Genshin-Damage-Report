@@ -3,12 +3,13 @@
     <div class="dashboard">
       <h1>队伍伤害仪表盘</h1>
     </div>
-    <SideBar></SideBar>
+    <SideBar :characters="this.avatarUrls"></SideBar>
   </div>
 </template>
 
 <script>
-import Loading from '../components/Loading.vue'
+import axios from 'axios'
+import config from '@/config'
 import SideBar from '../components/SideBar.vue'
 
 export default {
@@ -22,24 +23,69 @@ export default {
   },
   data() {
     return {
-      loading: true,
-      team: null
+      team: null,
+      avatarUrls: {}
+    }
+  },
+  methods: {
+    async getCharacterAvatar(team_data) {
+      const avatar = []
+      const newAvatars = {}
+      team_data.map(char => {
+        if (!char?.error) {
+          avatar.push(char.character.name)
+          newAvatars[char.character.name] = {
+            data: char,
+            element: this.avatarUrls[char.character.name]?.element || ''
+          }
+        }
+      })
+      this.avatarUrls = Object.assign({}, this.avatarUrls, newAvatars)
+      await this.getCharacterElement(avatar)
+    },
+    async getCharacterElement(avatar) {
+      try {
+        const response = await axios.get(`${config.api.baseUrl}${config.api.endpoints.character}/element`, {
+          params: { 
+            teamMember: avatar 
+          },
+          paramsSerializer: params => {
+            return Object.entries(params)
+              .flatMap(([key, values]) => 
+                Array.isArray(values) 
+                  ? values.map(v => `${key}=${encodeURIComponent(v)}`)
+                  : `${key}=${encodeURIComponent(values)}`
+              )
+              .join('&');
+          }
+        });
+        
+        // 更新缓存
+        response.data.data.forEach(item => {
+          this.avatarUrls[item.name].element = item.element || '';
+        });
+      
+      } catch (error) {
+        console.error('获取角色元素类型失败:', error);
+      }
     }
   },
   async created() {
     try {
-      const response = await fetch(`/api/card-data/${this.uuid}`)
-      const data = await response.json()
-      
-      if (data.code === 200) {
-        this.team = data.data
+      const response = await axios.get(
+        `${this.$config.api.baseUrl}${this.$config.api.endpoints.sim}/${this.uuid}`
+      )
+      if (response.data.code === 200) {
+        this.team = response.data.data
+        // 预加载角色头像
+        if (this.team?.team_data) {
+          await this.getCharacterAvatar(this.team.team_data)
+        }
       } else {
-        throw new Error(data.message)
+        console.error('获取队伍数据失败:', response.data.message)
       }
     } catch (error) {
       console.error('获取队伍数据失败:', error)
-    } finally {
-      this.loading = false
     }
   }
 }

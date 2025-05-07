@@ -4,7 +4,16 @@
       <ThemeToggle class="theme-toggle" />
     </div>
     <div class="sidebar-content">
-      <slot></slot>
+      <div v-if="characters" class="character-avatars">
+        <CharacterAvatar
+          v-for="(value, name) in characters"
+          :key="name"
+          :name="name"
+          :element="value.element"
+          :data="value.data"
+          class="character-avatar"
+        />
+      </div>
     </div>
     <v-btn 
       class="home-button"
@@ -20,11 +29,18 @@
 
 <script>
 import ThemeToggle from './ThemeToggle.vue'
+import CharacterAvatar from './CharacterAvatar.vue'
 import { useRouter } from 'vue-router'
 
 export default {
   name: 'SideBar',
-  components: { ThemeToggle },
+  components: { ThemeToggle, CharacterAvatar },
+  props: {
+    characters: {
+      type: Object,
+      default: null
+    }
+  },
   setup() {
     const router = useRouter()
     
@@ -44,21 +60,21 @@ export default {
   width: 160px;
   height: 100vh;
   background: rgba(var(--v-theme-secondary), 1);
-  padding: 20px;
+  padding: 10px;
   box-sizing: border-box;
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 100;
-  overflow-y: auto;
   display: flex;
-  justify-content: center;
+  justify-content: space-around;
+  flex-direction: column;
 }
 
 .sidebar-header {
-  margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(var(--v-theme-on-primary), 0.2);
+  border-bottom: 2px solid rgba(var(--v-theme-accent), 0.8);
+  display: flex;
+  justify-content: center;
 }
 
 .theme-toggle {
@@ -67,25 +83,40 @@ export default {
   height: 80px;
 }
 
-.sidebar-header h3 {
-  margin: 0;
-  color: rgba(var(--v-theme-on-primary), 1);
-  font-size: 1.2rem;
-}
-
 .sidebar-content {
   color: rgba(var(--v-theme-on-primary), 0.9);
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar-content h4 {
-  color: rgba(var(--v-theme-on-primary), 1);
-  margin-top: 20px;
-  margin-bottom: 10px;
+.character-avatars {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin: 40px 0;
+}
+
+.character-avatar {
+  width: 80px;
+  height: 80px;
+  border: 3px solid rgba(var(--v-theme-primary), 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.character-avatar:hover .avatar-img {
+  transform: scale(1.05);
 }
 
 .home-button {
-  position: absolute;
-  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   width: 60px;
